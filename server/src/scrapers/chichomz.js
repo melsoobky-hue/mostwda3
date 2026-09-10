@@ -112,16 +112,18 @@ async function scrapeOrders(page) {
     }
 
     console.log(`[Chichomz] Found ${orders.length} orders on page ${pageNum}`);
-    const nextBtn = await page.$('button:has-text("Next"), a:has-text("Next"), [aria-label="Next"], button:has-text("التالي"), a:has-text("التالي"), .pagination .next:not(.disabled), li.next a');
-    const isDisabled = await page.$('button:has-text("Next")[disabled], button:has-text("التالي")[disabled]');
-    if (nextBtn && !isDisabled) {
-      await nextBtn.click();
-      await page.waitForTimeout(2000);
-      await page.waitForLoadState('networkidle');
-      pageNum++;
-    } else {
-      hasMore = false;
-    }
+    let clicked = false;
+    try {
+      const nextBtn = await page.$('button:has-text("Next"):visible, a:has-text("Next"):visible, [aria-label="Next"]:visible, button:has-text("التالي"):visible, a:has-text("التالي"):visible, .pagination .next:not(.disabled):visible, li.next a:visible');
+      if (nextBtn) {
+        await nextBtn.click({ timeout: 5000 });
+        await page.waitForTimeout(2000);
+        await page.waitForLoadState('networkidle');
+        pageNum++;
+        clicked = true;
+      }
+    } catch (_) {}
+    if (!clicked) hasMore = false;
   }
   console.log(`[Chichomz] Total pages scraped: ${pageNum}`);
 }

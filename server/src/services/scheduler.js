@@ -4,7 +4,7 @@ import { scrapeChichomz } from '../scrapers/chichomz.js';
 import { scrapeRaneen } from '../scrapers/raneen.js';
 import { syncSarayDecoreAPI } from './saraydecore-sync.js';
 import { hasCookies } from '../scrapers/browser.js';
-import { logSync, getSetting, setSetting } from './database.js';
+import { logSync, getSetting, setSetting, refreshDailySummary, evaluateRules, processRecurringInvoices } from './database.js';
 
 /* ── State ──────────────────────────────────────────────────────────────── */
 let isRunning       = false;
@@ -208,6 +208,20 @@ export async function runAllScrapers(auto = true) {
 
   isRunning = false;
   broadcast('sync_complete', { completedAt: new Date().toISOString(), results });
+
+  // Post-sync: refresh daily summary, evaluate rules, process recurring invoices
+  try {
+    refreshDailySummary(new Date().toISOString().slice(0, 10));
+  } catch (e) { console.error('[Scheduler] daily_summary refresh failed:', e.message); }
+  try {
+    const notifications = evaluateRules();
+    if (notifications.length) broadcast('rules_triggered', { notifications });
+  } catch (e) { console.error('[Scheduler] rules evaluation failed:', e.message); }
+  try {
+    const recurring = processRecurringInvoices();
+    if (recurring.length) console.log(`[Scheduler] Generated ${recurring.length} recurring invoice(s)`);
+  } catch (e) { console.error('[Scheduler] recurring invoices failed:', e.message); }
+
   return { success: true, results };
 }
 

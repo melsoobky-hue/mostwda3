@@ -3,6 +3,8 @@ import cors from 'cors';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
+
+// ── Existing routes ──────────────────────────────────────────────────────────
 import ordersRouter from './routes/orders.js';
 import productsRouter from './routes/products.js';
 import analyticsRouter from './routes/analytics.js';
@@ -26,6 +28,25 @@ import creditNotesRouter from './routes/credit-notes.js';
 import paymentsRouter from './routes/payments.js';
 import salesRouter from './routes/sales.js';
 import productsErpRouter from './routes/products-erp.js';
+import shipmentsRouter from './routes/shipments.js';
+
+// ── New ERP routes ───────────────────────────────────────────────────────────
+import suppliersRouter from './routes/suppliers.js';
+import purchaseOrdersRouter from './routes/purchase-orders.js';
+import goodsReceiptsRouter from './routes/goods-receipts.js';
+import hrRouter from './routes/hr.js';
+import accountingRouter from './routes/accounting.js';
+import bankRouter from './routes/bank.js';
+import fixedAssetsRouter from './routes/fixed-assets.js';
+import taxRouter from './routes/tax.js';
+import warehouseRouter from './routes/warehouse.js';
+import notificationsRouter from './routes/notifications.js';
+import recurringInvoicesRouter from './routes/recurring-invoices.js';
+import pdfRouter from './routes/pdf.js';
+
+// ── Middleware ────────────────────────────────────────────────────────────────
+import { authMiddleware } from './middleware/auth.js';
+
 import { startScheduler } from './services/scheduler.js';
 import { getDb, seedInventoryFromProducts, seedDemoExpenses } from './services/database.js';
 
@@ -37,6 +58,10 @@ const clientDist = join(__dirname, '..', '..', 'client', 'dist');
 app.use(cors());
 app.use(express.json());
 
+// Auth middleware on all /api routes
+app.use('/api', authMiddleware);
+
+// ── Existing routes ──────────────────────────────────────────────────────────
 app.use('/api/orders', ordersRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/analytics', analyticsRouter);
@@ -60,6 +85,21 @@ app.use('/api/erp/credit-notes', creditNotesRouter);
 app.use('/api/erp/payments', paymentsRouter);
 app.use('/api/erp/sales', salesRouter);
 app.use('/api/erp/products', productsErpRouter);
+app.use('/api/shipments', shipmentsRouter);
+
+// ── New ERP routes ───────────────────────────────────────────────────────────
+app.use('/api/erp/suppliers', suppliersRouter);
+app.use('/api/erp/purchase-orders', purchaseOrdersRouter);
+app.use('/api/erp/goods-receipts', goodsReceiptsRouter);
+app.use('/api/hr', hrRouter);
+app.use('/api/accounting', accountingRouter);
+app.use('/api/bank', bankRouter);
+app.use('/api/fixed-assets', fixedAssetsRouter);
+app.use('/api/tax', taxRouter);
+app.use('/api/warehouse', warehouseRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/erp/recurring-invoices', recurringInvoicesRouter);
+app.use('/api/pdf', pdfRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

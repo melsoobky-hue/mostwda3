@@ -97,16 +97,18 @@ async function scrapeShipments(page) {
     }
 
     console.log(`[Raneen] Found ${shipments.length} shipments on page ${pageNum}`);
-    const nextBtn = await page.$('button:has-text("التالي"), button:has-text("Next"), a:has-text("التالي"), a:has-text("Next"), .pagination .next:not(.disabled), li.next a');
-    const isDisabled = await page.$('button:has-text("التالي")[disabled], button:has-text("Next")[disabled]');
-    if (nextBtn && !isDisabled) {
-      await nextBtn.click();
-      await page.waitForTimeout(2000);
-      await page.waitForLoadState('networkidle');
-      pageNum++;
-    } else {
-      hasMore = false;
-    }
+    let clicked = false;
+    try {
+      const nextBtn = await page.$('button:has-text("التالي"):visible, button:has-text("Next"):visible, a:has-text("التالي"):visible, a:has-text("Next"):visible, .pagination .next:not(.disabled):visible, li.next a:visible');
+      if (nextBtn) {
+        await nextBtn.click({ timeout: 5000 });
+        await page.waitForTimeout(2000);
+        await page.waitForLoadState('networkidle');
+        pageNum++;
+        clicked = true;
+      }
+    } catch (_) {}
+    if (!clicked) hasMore = false;
   }
   console.log(`[Raneen] Total pages scraped: ${pageNum}`);
 }

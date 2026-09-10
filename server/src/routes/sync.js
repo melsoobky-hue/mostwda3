@@ -76,6 +76,33 @@ router.get('/logs', (req, res) => {
   }
 });
 
+// Source profiles — used by Settings.jsx
+router.get('/profiles', (req, res) => {
+  try {
+    const status = getSyncStatus();
+    const sources = ['mostwda3', 'saraydecore', 'chichomz', 'raneen'];
+    const profiles = {};
+    for (const src of sources) {
+      const s = status.sources?.[src] || {};
+      const hasCreds =
+        src === 'mostwda3'    ? !!(getSetting('mostwda3_username') && getSetting('mostwda3_password')) :
+        src === 'saraydecore' ? !!(getSetting('saraydecore_username') && getSetting('saraydecore_password')) :
+        src === 'chichomz'   ? !!(getSetting('chichomz_email') && getSetting('chichomz_password')) :
+        src === 'raneen'      ? !!(getSetting('raneen_email') && getSetting('raneen_password')) : false;
+      profiles[src] = {
+        status: s.state === 'success' ? 'active' : hasCreds ? 'configured' : 'idle',
+        hasCredentials: hasCreds,
+        lastRun: s.lastRun || null,
+        lastSuccess: s.lastSuccess || null,
+        lastError: s.lastError || null,
+      };
+    }
+    res.json({ profiles });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/credentials', (req, res) => {
   res.json({
     mostwda3: {

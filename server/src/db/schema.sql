@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS products (
   lighting_type TEXT,
   has_touch INTEGER DEFAULT 0,
   has_led INTEGER DEFAULT 0,
-  hasluetooth INTEGER DEFAULT 0,
+  has_bluetooth INTEGER DEFAULT 0,
   description TEXT,
   description_ar TEXT,
   price REAL DEFAULT 0,

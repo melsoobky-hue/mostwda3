@@ -23,10 +23,11 @@ router.post('/sync', (req, res) => {
   res.json({ status: 'synced', ...result });
 });
 
+// Bug fix #3: Pass full body so low_stock_threshold and cost are saved
 router.put('/stock', (req, res) => {
-  const { sku, quantity, notes } = req.body;
+  const { sku, quantity, notes, low_stock_threshold, cost } = req.body;
   if (!sku) return res.status(400).json({ error: 'sku required' });
-  updateStock(sku, quantity, notes);
+  updateStock(sku, quantity, notes, low_stock_threshold, cost);
   res.json({ status: 'updated' });
 });
 

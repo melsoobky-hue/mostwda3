@@ -509,6 +509,470 @@ function initSchema() {
     );
   `);
 
+  // ── Purchasing / Procurement ─────────────────────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS suppliers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      name_ar TEXT DEFAULT '',
+      contact_person TEXT DEFAULT '',
+      email TEXT DEFAULT '',
+      phone TEXT DEFAULT '',
+      address TEXT DEFAULT '',
+      city TEXT DEFAULT '',
+      governorate TEXT DEFAULT '',
+      country TEXT DEFAULT 'Egypt',
+      tax_number TEXT DEFAULT '',
+      payment_terms INTEGER DEFAULT 30,
+      credit_limit REAL DEFAULT 0,
+      notes TEXT DEFAULT '',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS purchase_orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      po_number TEXT UNIQUE NOT NULL,
+      supplier_id INTEGER,
+      status TEXT DEFAULT 'draft',
+      order_date TEXT DEFAULT (date('now')),
+      expected_date TEXT DEFAULT '',
+      received_date TEXT DEFAULT '',
+      subtotal REAL DEFAULT 0,
+      tax_amount REAL DEFAULT 0,
+      tax_percent REAL DEFAULT 14,
+      shipping_cost REAL DEFAULT 0,
+      total REAL DEFAULT 0,
+      amount_paid REAL DEFAULT 0,
+      balance_due REAL DEFAULT 0,
+      currency TEXT DEFAULT 'EGP',
+      notes TEXT DEFAULT '',
+      created_by TEXT DEFAULT 'admin',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS purchase_order_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      po_id INTEGER NOT NULL,
+      product_id INTEGER,
+      product_name TEXT DEFAULT '',
+      sku TEXT DEFAULT '',
+      quantity REAL DEFAULT 1,
+      received_quantity REAL DEFAULT 0,
+      unit_price REAL DEFAULT 0,
+      tax_percent REAL DEFAULT 14,
+      total REAL DEFAULT 0,
+      sort_order INTEGER DEFAULT 0,
+      FOREIGN KEY (po_id) REFERENCES purchase_orders(id) ON DELETE CASCADE
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS goods_receipts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      grn_number TEXT UNIQUE NOT NULL,
+      po_id INTEGER,
+      supplier_id INTEGER,
+      receipt_date TEXT DEFAULT (date('now')),
+      notes TEXT DEFAULT '',
+      created_by TEXT DEFAULT 'admin',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (po_id) REFERENCES purchase_orders(id),
+      FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS goods_receipt_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      grn_id INTEGER NOT NULL,
+      po_item_id INTEGER,
+      product_id INTEGER,
+      product_name TEXT DEFAULT '',
+      sku TEXT DEFAULT '',
+      expected_qty REAL DEFAULT 0,
+      received_qty REAL DEFAULT 0,
+      unit_cost REAL DEFAULT 0,
+      total_cost REAL DEFAULT 0,
+      FOREIGN KEY (grn_id) REFERENCES goods_receipts(id) ON DELETE CASCADE
+    );
+  `);
+
+  // ── HR / Payroll ────────────────────────────────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS employees (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      employee_number TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      name_ar TEXT DEFAULT '',
+      national_id TEXT DEFAULT '',
+      email TEXT DEFAULT '',
+      phone TEXT DEFAULT '',
+      department TEXT DEFAULT '',
+      job_title TEXT DEFAULT '',
+      hire_date TEXT DEFAULT '',
+      termination_date TEXT DEFAULT '',
+      employment_type TEXT DEFAULT 'full_time',
+      basic_salary REAL DEFAULT 0,
+      allowances REAL DEFAULT 0,
+      bank_account TEXT DEFAULT '',
+      address TEXT DEFAULT '',
+      emergency_contact TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS attendance (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      employee_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      check_in TEXT DEFAULT '',
+      check_out TEXT DEFAULT '',
+      hours_worked REAL DEFAULT 0,
+      overtime_hours REAL DEFAULT 0,
+      status TEXT DEFAULT 'present',
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (employee_id) REFERENCES employees(id),
+      UNIQUE(employee_id, date)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS payroll (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      payroll_number TEXT UNIQUE NOT NULL,
+      employee_id INTEGER NOT NULL,
+      period_month TEXT NOT NULL,
+      basic_salary REAL DEFAULT 0,
+      allowances REAL DEFAULT 0,
+      overtime_pay REAL DEFAULT 0,
+      bonuses REAL DEFAULT 0,
+      deductions REAL DEFAULT 0,
+      tax_deduction REAL DEFAULT 0,
+      social_insurance REAL DEFAULT 0,
+      net_salary REAL DEFAULT 0,
+      status TEXT DEFAULT 'draft',
+      paid_date TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (employee_id) REFERENCES employees(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS leave_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      employee_id INTEGER NOT NULL,
+      leave_type TEXT DEFAULT 'annual',
+      start_date TEXT NOT NULL,
+      end_date TEXT NOT NULL,
+      days INTEGER DEFAULT 1,
+      reason TEXT DEFAULT '',
+      status TEXT DEFAULT 'pending',
+      approved_by TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (employee_id) REFERENCES employees(id)
+    );
+  `);
+
+  // ── General Ledger / Accounting ──────────────────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS chart_of_accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_code TEXT UNIQUE NOT NULL,
+      account_name TEXT NOT NULL,
+      account_name_ar TEXT DEFAULT '',
+      account_type TEXT NOT NULL,
+      parent_id INTEGER,
+      normal_balance TEXT DEFAULT 'debit',
+      description TEXT DEFAULT '',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (parent_id) REFERENCES chart_of_accounts(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS journal_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entry_number TEXT UNIQUE NOT NULL,
+      date TEXT DEFAULT (date('now')),
+      description TEXT DEFAULT '',
+      reference TEXT DEFAULT '',
+      source_type TEXT DEFAULT 'manual',
+      source_id INTEGER,
+      status TEXT DEFAULT 'posted',
+      created_by TEXT DEFAULT 'admin',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS journal_lines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entry_id INTEGER NOT NULL,
+      account_id INTEGER NOT NULL,
+      debit REAL DEFAULT 0,
+      credit REAL DEFAULT 0,
+      description TEXT DEFAULT '',
+      FOREIGN KEY (entry_id) REFERENCES journal_entries(id) ON DELETE CASCADE,
+      FOREIGN KEY (account_id) REFERENCES chart_of_accounts(id)
+    );
+  `);
+
+  // ── Bank Accounts & Reconciliation ──────────────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS bank_accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_name TEXT NOT NULL,
+      bank_name TEXT NOT NULL,
+      account_number TEXT DEFAULT '',
+      iban TEXT DEFAULT '',
+      currency TEXT DEFAULT 'EGP',
+      opening_balance REAL DEFAULT 0,
+      current_balance REAL DEFAULT 0,
+      is_active INTEGER DEFAULT 1,
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS bank_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      bank_account_id INTEGER NOT NULL,
+      transaction_date TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      reference TEXT DEFAULT '',
+      debit REAL DEFAULT 0,
+      credit REAL DEFAULT 0,
+      balance REAL DEFAULT 0,
+      is_reconciled INTEGER DEFAULT 0,
+      reconciled_at TEXT DEFAULT '',
+      payment_id INTEGER,
+      journal_entry_id INTEGER,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id)
+    );
+  `);
+
+  // ── Fixed Assets ──────────────────────────────────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS fixed_assets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      asset_code TEXT UNIQUE NOT NULL,
+      asset_name TEXT NOT NULL,
+      category TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      purchase_date TEXT DEFAULT '',
+      purchase_price REAL DEFAULT 0,
+      salvage_value REAL DEFAULT 0,
+      useful_life_years INTEGER DEFAULT 5,
+      depreciation_method TEXT DEFAULT 'straight_line',
+      accumulated_depreciation REAL DEFAULT 0,
+      current_value REAL DEFAULT 0,
+      location TEXT DEFAULT '',
+      status TEXT DEFAULT 'active',
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS asset_depreciation (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      asset_id INTEGER NOT NULL,
+      period TEXT NOT NULL,
+      depreciation_amount REAL DEFAULT 0,
+      accumulated_total REAL DEFAULT 0,
+      book_value REAL DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (asset_id) REFERENCES fixed_assets(id)
+    );
+  `);
+
+  // ── Tax Configuration ──────────────────────────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS tax_rates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      rate REAL NOT NULL,
+      type TEXT DEFAULT 'vat',
+      is_default INTEGER DEFAULT 0,
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  // ── Currencies & Exchange Rates ────────────────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS currencies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      symbol TEXT DEFAULT '',
+      is_base INTEGER DEFAULT 0,
+      is_active INTEGER DEFAULT 1
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS exchange_rates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      from_currency TEXT NOT NULL,
+      to_currency TEXT NOT NULL,
+      rate REAL NOT NULL,
+      effective_date TEXT DEFAULT (date('now')),
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  // ── Warehouse Locations & Transfers ──────────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS warehouses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      code TEXT UNIQUE NOT NULL,
+      address TEXT DEFAULT '',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS warehouse_locations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      warehouse_id INTEGER NOT NULL,
+      zone TEXT DEFAULT '',
+      aisle TEXT DEFAULT '',
+      shelf TEXT DEFAULT '',
+      bin TEXT DEFAULT '',
+      name TEXT NOT NULL,
+      is_active INTEGER DEFAULT 1,
+      FOREIGN KEY (warehouse_id) REFERENCES warehouses(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS stock_transfers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transfer_number TEXT UNIQUE NOT NULL,
+      from_warehouse_id INTEGER,
+      to_warehouse_id INTEGER,
+      status TEXT DEFAULT 'draft',
+      transfer_date TEXT DEFAULT (date('now')),
+      notes TEXT DEFAULT '',
+      created_by TEXT DEFAULT 'admin',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (from_warehouse_id) REFERENCES warehouses(id),
+      FOREIGN KEY (to_warehouse_id) REFERENCES warehouses(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS stock_transfer_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transfer_id INTEGER NOT NULL,
+      sku TEXT DEFAULT '',
+      product_name TEXT DEFAULT '',
+      quantity REAL DEFAULT 0,
+      from_location_id INTEGER,
+      to_location_id INTEGER,
+      FOREIGN KEY (transfer_id) REFERENCES stock_transfers(id) ON DELETE CASCADE
+    );
+  `);
+
+  // ── Notifications / Alerts log ────────────────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT DEFAULT '',
+      entity_type TEXT DEFAULT '',
+      entity_id INTEGER,
+      is_read INTEGER DEFAULT 0,
+      rule_id INTEGER,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  // ── Manual customers (not from orders) ───────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS manual_customers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      phone TEXT UNIQUE,
+      email TEXT DEFAULT '',
+      address TEXT DEFAULT '',
+      governorate TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  // Insert default chart of accounts if empty
+  const coaCount = execCount('SELECT COUNT(*) FROM chart_of_accounts');
+  if (coaCount === 0) {
+    const defaultAccounts = [
+      ['1000', 'Assets', 'Assets', 'asset', null, 'debit'],
+      ['1100', 'Current Assets', 'الأصول المتداولة', 'asset', null, 'debit'],
+      ['1110', 'Cash', 'النقدية', 'asset', null, 'debit'],
+      ['1120', 'Bank', 'البنك', 'asset', null, 'debit'],
+      ['1130', 'Accounts Receivable', 'المدينون', 'asset', null, 'debit'],
+      ['1140', 'Inventory', 'المخزون', 'asset', null, 'debit'],
+      ['1200', 'Fixed Assets', 'الأصول الثابتة', 'asset', null, 'debit'],
+      ['2000', 'Liabilities', 'الخصوم', 'liability', null, 'credit'],
+      ['2100', 'Current Liabilities', 'الخصوم المتداولة', 'liability', null, 'credit'],
+      ['2110', 'Accounts Payable', 'الدائنون', 'liability', null, 'credit'],
+      ['2120', 'VAT Payable', 'ضريبة القيمة المضافة', 'liability', null, 'credit'],
+      ['3000', 'Equity', 'حقوق الملكية', 'equity', null, 'credit'],
+      ['3100', 'Retained Earnings', 'الأرباح المحتجزة', 'equity', null, 'credit'],
+      ['4000', 'Revenue', 'الإيرادات', 'revenue', null, 'credit'],
+      ['4100', 'Sales Revenue', 'إيرادات المبيعات', 'revenue', null, 'credit'],
+      ['5000', 'Expenses', 'المصروفات', 'expense', null, 'debit'],
+      ['5100', 'Cost of Goods Sold', 'تكلفة البضاعة المباعة', 'expense', null, 'debit'],
+      ['5200', 'Operating Expenses', 'المصروفات التشغيلية', 'expense', null, 'debit'],
+      ['5300', 'Payroll Expense', 'مصروفات الرواتب', 'expense', null, 'debit'],
+    ];
+    for (const [code, name, nameAr, type, parent, normal] of defaultAccounts) {
+      runSql(`INSERT OR IGNORE INTO chart_of_accounts (account_code, account_name, account_name_ar, account_type, parent_id, normal_balance) VALUES (?,?,?,?,?,?)`,
+        [code, name, nameAr, type, parent, normal]);
+    }
+  }
+
+  // Insert default tax rates if empty
+  const taxCount = execCount('SELECT COUNT(*) FROM tax_rates');
+  if (taxCount === 0) {
+    runSql(`INSERT INTO tax_rates (name, rate, type, is_default, is_active) VALUES ('VAT 14%', 14, 'vat', 1, 1)`);
+    runSql(`INSERT INTO tax_rates (name, rate, type, is_default, is_active) VALUES ('VAT 0%', 0, 'vat', 0, 1)`);
+    runSql(`INSERT INTO tax_rates (name, rate, type, is_default, is_active) VALUES ('Exempt', 0, 'exempt', 0, 1)`);
+  }
+
+  // Insert default currencies if empty
+  const currCount = execCount('SELECT COUNT(*) FROM currencies');
+  if (currCount === 0) {
+    runSql(`INSERT INTO currencies (code, name, symbol, is_base, is_active) VALUES ('EGP', 'Egyptian Pound', 'ج.م', 1, 1)`);
+    runSql(`INSERT INTO currencies (code, name, symbol, is_base, is_active) VALUES ('USD', 'US Dollar', '$', 0, 1)`);
+    runSql(`INSERT INTO currencies (code, name, symbol, is_base, is_active) VALUES ('EUR', 'Euro', '€', 0, 1)`);
+    runSql(`INSERT INTO currencies (code, name, symbol, is_base, is_active) VALUES ('SAR', 'Saudi Riyal', 'ر.س', 0, 1)`);
+  }
+
   // Insert default admin PIN if none exists
   const authCount = execCount('SELECT COUNT(*) FROM auth');
   if (authCount === 0) {
@@ -1040,11 +1504,13 @@ export function getInventory(filters = {}) {
   return queryAll(`SELECT * FROM inventory WHERE ${where} ORDER BY name ASC`, params);
 }
 
-export function updateStock(sku, quantity, notes) {
-  runSql(
-    `UPDATE inventory SET stock_quantity = ?, last_restocked = datetime('now'), notes = ?, updated_at = datetime('now') WHERE sku = ?`,
-    [quantity, notes || '', sku]
-  );
+export function updateStock(sku, quantity, notes, low_stock_threshold, cost) {
+  const fields = [`stock_quantity = ?`, `last_restocked = datetime('now')`, `notes = ?`, `updated_at = datetime('now')`];
+  const params = [quantity, notes || ''];
+  if (low_stock_threshold != null) { fields.splice(2, 0, 'low_stock_threshold = ?'); params.splice(2, 0, low_stock_threshold); }
+  if (cost != null && cost >= 0) { fields.splice(-1, 0, 'cost = ?'); params.splice(-1, 0, cost); }
+  params.push(sku);
+  runSql(`UPDATE inventory SET ${fields.join(', ')} WHERE sku = ?`, params);
   saveDb();
 }
 
@@ -2015,4 +2481,624 @@ export function getSalesSummary(filters = {}) {
     monthly,
     topCustomers,
   };
+}
+
+
+// ─── Bug Fix: Manual Customers ──────────────────────────────────────────────
+export function createManualCustomer(data) {
+  const existing = execCount('SELECT COUNT(*) FROM manual_customers WHERE phone = ?', [data.phone]);
+  if (existing > 0) {
+    runSql('UPDATE manual_customers SET name=?, email=?, address=?, governorate=?, notes=? WHERE phone=?',
+      [data.name||'', data.email||'', data.address||'', data.governorate||'', data.notes||'', data.phone]);
+  } else {
+    runSql('INSERT INTO manual_customers (name, phone, email, address, governorate, notes) VALUES (?,?,?,?,?,?)',
+      [data.name||'', data.phone||'', data.email||'', data.address||'', data.governorate||'', data.notes||'']);
+  }
+  saveDb();
+  return { phone: data.phone };
+}
+
+export function deleteManualCustomer(phone) {
+  runSql('DELETE FROM manual_customers WHERE phone = ?', [phone]);
+  saveDb();
+}
+
+// ─── Bug Fix: updatePayment & updateCreditNote ──────────────────────────────
+export function updatePayment(id, data) {
+  const fields = [];
+  const params = [];
+  const allowed = ['amount','payment_method','payment_date','reference','notes','bank_name','cheque_number'];
+  for (const [k, v] of Object.entries(data)) {
+    if (allowed.includes(k)) { fields.push(`${k} = ?`); params.push(v); }
+  }
+  if (fields.length === 0) return false;
+  params.push(parseInt(id));
+  runSql(`UPDATE payments SET ${fields.join(', ')} WHERE id = ?`, params);
+  saveDb();
+  return true;
+}
+
+export function updateCreditNote(id, data) {
+  const fields = [];
+  const params = [];
+  const allowed = ['status','date','subtotal','tax_amount','tax_percent','total','reason','notes','applied_to_invoice'];
+  for (const [k, v] of Object.entries(data)) {
+    if (allowed.includes(k)) { fields.push(`${k} = ?`); params.push(v); }
+  }
+  if (fields.length === 0) return false;
+  fields.push("updated_at = datetime('now')");
+  params.push(parseInt(id));
+  runSql(`UPDATE credit_notes SET ${fields.join(', ')} WHERE id = ?`, params);
+  saveDb();
+  return true;
+}
+
+// ─── Daily Summary (Bug Fix #5) ─────────────────────────────────────────────
+export function refreshDailySummary(dateStr) {
+  const date = dateStr || new Date().toISOString().slice(0, 10);
+  const r = db.exec(`
+    SELECT COUNT(*) as total_orders, COALESCE(SUM(total_price),0) as total_revenue,
+      COALESCE(SUM(cost),0) as total_costs, COALESCE(SUM(profit),0) as total_profit,
+      COALESCE(SUM(cod_amount),0) as total_cod, COALESCE(SUM(shipping_cost),0) as total_shipping,
+      SUM(CASE WHEN is_delayed=1 THEN 1 ELSE 0 END) as delayed_orders,
+      SUM(CASE WHEN status='Delivered' THEN 1 ELSE 0 END) as delivered_orders,
+      SUM(CASE WHEN status IN('Cancelled','Failed') THEN 1 ELSE 0 END) as cancelled_orders,
+      AVG(total_price) as avg_order_value
+    FROM orders WHERE order_date = ?`, [date]);
+  if (!r.length || !r[0].values.length) return;
+  const cols = r[0].columns; const vals = r[0].values[0];
+  const s = {}; cols.forEach((c, i) => { s[c] = vals[i] ?? 0; });
+  runSql(`INSERT OR REPLACE INTO daily_summary
+    (date,total_orders,total_revenue,total_costs,total_profit,total_cod,total_shipping,
+     delayed_orders,delivered_orders,cancelled_orders,avg_order_value)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    [date,s.total_orders,s.total_revenue,s.total_costs,s.total_profit,
+     s.total_cod,s.total_shipping,s.delayed_orders,s.delivered_orders,s.cancelled_orders,s.avg_order_value]);
+  saveDb();
+}
+
+// ─── Rules Engine (Bug Fix #4) ──────────────────────────────────────────────
+export function evaluateRules() {
+  const rules = getActiveRules();
+  const notifications = [];
+  for (const rule of rules) {
+    try {
+      let triggered = false;
+      let message = '';
+      if (rule.type === 'low_stock') {
+        const thresh = rule.condition?.threshold || 5;
+        const items = queryAll('SELECT * FROM inventory WHERE stock_quantity <= ?', [thresh]);
+        if (items.length > 0) {
+          triggered = true;
+          message = `${items.length} products have stock ≤ ${thresh}`;
+        }
+      } else if (rule.type === 'delayed_orders') {
+        const count = execCount("SELECT COUNT(*) FROM orders WHERE is_delayed=1 AND status NOT IN('Delivered','Cancelled')");
+        if (count > 0) { triggered = true; message = `${count} delayed orders need attention`; }
+      } else if (rule.type === 'loss_orders') {
+        const count = execCount('SELECT COUNT(*) FROM orders WHERE profit < 0');
+        if (count > 0) { triggered = true; message = `${count} orders running at a loss`; }
+      }
+      if (triggered) {
+        const already = execCount('SELECT COUNT(*) FROM notifications WHERE rule_id=? AND is_read=0 AND created_at > datetime("now","-1 hour")', [rule.id]);
+        if (already === 0) {
+          runSql('INSERT INTO notifications (type,title,message,rule_id) VALUES (?,?,?,?)',
+            [rule.type, rule.name, message, rule.id]);
+          runSql('UPDATE rules SET trigger_count = COALESCE(trigger_count,0)+1 WHERE id=?', [rule.id]);
+          notifications.push({ rule: rule.name, message });
+        }
+      }
+    } catch (_) {}
+  }
+  if (notifications.length) saveDb();
+  return notifications;
+}
+
+export function getNotifications(unreadOnly = false) {
+  const where = unreadOnly ? 'WHERE is_read=0' : '';
+  return queryAll(`SELECT * FROM notifications ${where} ORDER BY created_at DESC LIMIT 100`);
+}
+
+export function markNotificationRead(id) {
+  runSql('UPDATE notifications SET is_read=1 WHERE id=?', [parseInt(id)]);
+  saveDb();
+}
+
+export function markAllNotificationsRead() {
+  runSql("UPDATE notifications SET is_read=1 WHERE is_read=0");
+  saveDb();
+}
+
+// ─── Suppliers ───────────────────────────────────────────────────────────────
+export function getSuppliers(filters = {}) {
+  let where = '1=1'; const params = [];
+  if (filters.search) { where += ' AND (name LIKE ? OR phone LIKE ? OR email LIKE ?)'; const s=`%${filters.search}%`; params.push(s,s,s); }
+  if (filters.is_active !== undefined) { where += ' AND is_active=?'; params.push(filters.is_active); }
+  const page=Math.max(1,parseInt(filters.page)||1), limit=Math.min(200,parseInt(filters.limit)||50);
+  const total=execCount(`SELECT COUNT(*) FROM suppliers WHERE ${where}`,params);
+  const suppliers=queryAll(`SELECT * FROM suppliers WHERE ${where} ORDER BY name ASC LIMIT ? OFFSET ?`,[...params,limit,(page-1)*limit]);
+  return {suppliers,total,page,limit};
+}
+export function getSupplierById(id) { return queryOne('SELECT * FROM suppliers WHERE id=?',[parseInt(id)]); }
+export function createSupplier(data) {
+  runSql(`INSERT INTO suppliers (name,name_ar,contact_person,email,phone,address,city,governorate,country,tax_number,payment_terms,credit_limit,notes)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [data.name,data.name_ar||'',data.contact_person||'',data.email||'',data.phone||'',
+     data.address||'',data.city||'',data.governorate||'',data.country||'Egypt',
+     data.tax_number||'',data.payment_terms||30,data.credit_limit||0,data.notes||'']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function updateSupplier(id, data) {
+  const f=[],p=[],allowed=['name','name_ar','contact_person','email','phone','address','city','governorate','tax_number','payment_terms','credit_limit','notes','is_active'];
+  for(const[k,v]of Object.entries(data)){if(allowed.includes(k)){f.push(`${k}=?`);p.push(v);}}
+  if(!f.length)return false; f.push("updated_at=datetime('now')"); p.push(parseInt(id));
+  runSql(`UPDATE suppliers SET ${f.join(',')} WHERE id=?`,p); saveDb(); return true;
+}
+export function deleteSupplier(id) { runSql('DELETE FROM suppliers WHERE id=?',[parseInt(id)]); saveDb(); }
+
+// ─── Purchase Orders ─────────────────────────────────────────────────────────
+export function getNextPONumber() {
+  const row=queryOne("SELECT po_number FROM purchase_orders ORDER BY id DESC LIMIT 1");
+  if(!row||!row.po_number)return'PO-0001';
+  return`PO-${String((parseInt(row.po_number.replace('PO-',''))||0)+1).padStart(4,'0')}`;
+}
+export function getPurchaseOrders(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.supplier_id){where+=' AND po.supplier_id=?';params.push(parseInt(filters.supplier_id));}
+  if(filters.status){where+=' AND po.status=?';params.push(filters.status);}
+  if(filters.search){where+=' AND (po.po_number LIKE ? OR s.name LIKE ?)';const sv=`%${filters.search}%`;params.push(sv,sv);}
+  const page=Math.max(1,parseInt(filters.page)||1),limit=Math.min(200,parseInt(filters.limit)||50);
+  const total=execCount(`SELECT COUNT(*) FROM purchase_orders po LEFT JOIN suppliers s ON po.supplier_id=s.id WHERE ${where}`,params);
+  const orders=queryAll(`SELECT po.*,s.name as supplier_name FROM purchase_orders po LEFT JOIN suppliers s ON po.supplier_id=s.id WHERE ${where} ORDER BY po.order_date DESC LIMIT ? OFFSET ?`,[...params,limit,(page-1)*limit]);
+  return{orders,total,page,limit};
+}
+export function getPurchaseOrderById(id) {
+  const po=queryOne(`SELECT po.*,s.name as supplier_name FROM purchase_orders po LEFT JOIN suppliers s ON po.supplier_id=s.id WHERE po.id=?`,[parseInt(id)]);
+  if(!po)return null;
+  po.items=queryAll('SELECT * FROM purchase_order_items WHERE po_id=? ORDER BY sort_order',[parseInt(id)]);
+  return po;
+}
+export function createPurchaseOrder(data) {
+  const poNum=data.po_number||getNextPONumber();
+  runSql(`INSERT INTO purchase_orders (po_number,supplier_id,status,order_date,expected_date,subtotal,tax_amount,tax_percent,shipping_cost,total,amount_paid,balance_due,currency,notes,created_by)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [poNum,data.supplier_id||null,data.status||'draft',data.order_date||new Date().toISOString().slice(0,10),
+     data.expected_date||'',data.subtotal||0,data.tax_amount||0,data.tax_percent||14,
+     data.shipping_cost||0,data.total||0,data.amount_paid||0,data.balance_due||data.total||0,
+     data.currency||'EGP',data.notes||'',data.created_by||'admin']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); const poId=row?.id;
+  if(data.items?.length){
+    for(let i=0;i<data.items.length;i++){
+      const it=data.items[i];
+      runSql(`INSERT INTO purchase_order_items (po_id,product_id,product_name,sku,quantity,unit_price,tax_percent,total,sort_order) VALUES (?,?,?,?,?,?,?,?,?)`,
+        [poId,it.product_id||null,it.product_name||'',it.sku||'',it.quantity||1,it.unit_price||0,it.tax_percent||14,it.total||0,i]);
+    }
+  }
+  saveDb(); return poId;
+}
+export function updatePurchaseOrder(id, data) {
+  const f=[],p=[],allowed=['supplier_id','status','order_date','expected_date','received_date','subtotal','tax_amount','tax_percent','shipping_cost','total','amount_paid','balance_due','notes'];
+  for(const[k,v]of Object.entries(data)){if(allowed.includes(k)){f.push(`${k}=?`);p.push(v);}}
+  if(f.length){f.push("updated_at=datetime('now')");p.push(parseInt(id));runSql(`UPDATE purchase_orders SET ${f.join(',')} WHERE id=?`,p);}
+  if(data.items){
+    runSql('DELETE FROM purchase_order_items WHERE po_id=?',[parseInt(id)]);
+    for(let i=0;i<data.items.length;i++){const it=data.items[i];
+      runSql(`INSERT INTO purchase_order_items (po_id,product_id,product_name,sku,quantity,unit_price,tax_percent,total,sort_order) VALUES (?,?,?,?,?,?,?,?,?)`,
+        [id,it.product_id||null,it.product_name||'',it.sku||'',it.quantity||1,it.unit_price||0,it.tax_percent||14,it.total||0,i]);}
+  }
+  saveDb(); return true;
+}
+export function deletePurchaseOrder(id) {
+  runSql('DELETE FROM purchase_order_items WHERE po_id=?',[parseInt(id)]);
+  runSql('DELETE FROM purchase_orders WHERE id=?',[parseInt(id)]);
+  saveDb();
+}
+
+// ─── Goods Receipts ──────────────────────────────────────────────────────────
+export function getNextGRNNumber() {
+  const row=queryOne("SELECT grn_number FROM goods_receipts ORDER BY id DESC LIMIT 1");
+  if(!row||!row.grn_number)return'GRN-0001';
+  return`GRN-${String((parseInt(row.grn_number.replace('GRN-',''))||0)+1).padStart(4,'0')}`;
+}
+export function getGoodsReceipts(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.po_id){where+=' AND gr.po_id=?';params.push(parseInt(filters.po_id));}
+  if(filters.supplier_id){where+=' AND gr.supplier_id=?';params.push(parseInt(filters.supplier_id));}
+  const page=Math.max(1,parseInt(filters.page)||1),limit=50;
+  const total=execCount(`SELECT COUNT(*) FROM goods_receipts gr WHERE ${where}`,params);
+  const receipts=queryAll(`SELECT gr.*,po.po_number,s.name as supplier_name FROM goods_receipts gr LEFT JOIN purchase_orders po ON gr.po_id=po.id LEFT JOIN suppliers s ON gr.supplier_id=s.id WHERE ${where} ORDER BY gr.receipt_date DESC LIMIT ? OFFSET ?`,[...params,limit,(page-1)*limit]);
+  return{receipts,total,page,limit};
+}
+export function createGoodsReceipt(data) {
+  const grnNum=data.grn_number||getNextGRNNumber();
+  runSql(`INSERT INTO goods_receipts (grn_number,po_id,supplier_id,receipt_date,notes,created_by) VALUES (?,?,?,?,?,?)`,
+    [grnNum,data.po_id||null,data.supplier_id||null,data.receipt_date||new Date().toISOString().slice(0,10),data.notes||'',data.created_by||'admin']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); const grnId=row?.id;
+  if(data.items?.length){
+    for(const it of data.items){
+      runSql(`INSERT INTO goods_receipt_items (grn_id,po_item_id,product_id,product_name,sku,expected_qty,received_qty,unit_cost,total_cost) VALUES (?,?,?,?,?,?,?,?,?)`,
+        [grnId,it.po_item_id||null,it.product_id||null,it.product_name||'',it.sku||'',it.expected_qty||0,it.received_qty||0,it.unit_cost||0,it.total_cost||0]);
+      // Update inventory stock
+      if(it.sku && it.received_qty > 0){
+        const inv=queryOne('SELECT * FROM inventory WHERE sku=?',[it.sku]);
+        if(inv){
+          runSql("UPDATE inventory SET stock_quantity=stock_quantity+?,cost=CASE WHEN ?<>0 THEN ? ELSE cost END,last_restocked=datetime('now'),updated_at=datetime('now') WHERE sku=?",
+            [it.received_qty,it.unit_cost||0,it.unit_cost||0,it.sku]);
+        } else {
+          runSql(`INSERT INTO inventory (sku,name,stock_quantity,cost,last_restocked) VALUES (?,?,?,?,datetime('now'))`,
+            [it.sku,it.product_name||'',it.received_qty||0,it.unit_cost||0]);
+        }
+        // Update PO received quantity
+        if(it.po_item_id){
+          runSql('UPDATE purchase_order_items SET received_quantity=COALESCE(received_quantity,0)+? WHERE id=?',[it.received_qty,it.po_item_id]);
+        }
+      }
+    }
+  }
+  // Mark PO as received if fully received
+  if(data.po_id) {
+    const remaining=execCount('SELECT COUNT(*) FROM purchase_order_items WHERE po_id=? AND received_quantity < quantity',[parseInt(data.po_id)]);
+    if(remaining===0) runSql("UPDATE purchase_orders SET status='received',received_date=date('now'),updated_at=datetime('now') WHERE id=?",[parseInt(data.po_id)]);
+  }
+  saveDb(); return grnId;
+}
+
+// ─── Employees ───────────────────────────────────────────────────────────────
+export function getNextEmployeeNumber() {
+  const row=queryOne("SELECT employee_number FROM employees ORDER BY id DESC LIMIT 1");
+  if(!row||!row.employee_number)return'EMP-001';
+  return`EMP-${String((parseInt(row.employee_number.replace('EMP-',''))||0)+1).padStart(3,'0')}`;
+}
+export function getEmployees(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.search){where+=' AND (name LIKE ? OR email LIKE ? OR department LIKE ?)';const s=`%${filters.search}%`;params.push(s,s,s);}
+  if(filters.department){where+=' AND department=?';params.push(filters.department);}
+  if(filters.is_active!==undefined){where+=' AND is_active=?';params.push(filters.is_active);}
+  const page=Math.max(1,parseInt(filters.page)||1),limit=Math.min(200,parseInt(filters.limit)||50);
+  const total=execCount(`SELECT COUNT(*) FROM employees WHERE ${where}`,params);
+  const employees=queryAll(`SELECT * FROM employees WHERE ${where} ORDER BY name ASC LIMIT ? OFFSET ?`,[...params,limit,(page-1)*limit]);
+  return{employees,total,page,limit};
+}
+export function getEmployeeById(id){return queryOne('SELECT * FROM employees WHERE id=?',[parseInt(id)]);}
+export function createEmployee(data) {
+  const num=data.employee_number||getNextEmployeeNumber();
+  runSql(`INSERT INTO employees (employee_number,name,name_ar,national_id,email,phone,department,job_title,hire_date,employment_type,basic_salary,allowances,bank_account,address,emergency_contact,notes)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [num,data.name,data.name_ar||'',data.national_id||'',data.email||'',data.phone||'',data.department||'',
+     data.job_title||'',data.hire_date||'',data.employment_type||'full_time',
+     data.basic_salary||0,data.allowances||0,data.bank_account||'',data.address||'',data.emergency_contact||'',data.notes||'']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function updateEmployee(id, data) {
+  const f=[],p=[],allowed=['name','name_ar','national_id','email','phone','department','job_title','hire_date','termination_date','employment_type','basic_salary','allowances','bank_account','address','emergency_contact','notes','is_active'];
+  for(const[k,v]of Object.entries(data)){if(allowed.includes(k)){f.push(`${k}=?`);p.push(v);}}
+  if(!f.length)return false; f.push("updated_at=datetime('now')"); p.push(parseInt(id));
+  runSql(`UPDATE employees SET ${f.join(',')} WHERE id=?`,p); saveDb(); return true;
+}
+export function deleteEmployee(id){runSql('DELETE FROM employees WHERE id=?',[parseInt(id)]);saveDb();}
+
+// ─── Attendance ──────────────────────────────────────────────────────────────
+export function getAttendance(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.employee_id){where+=' AND a.employee_id=?';params.push(parseInt(filters.employee_id));}
+  if(filters.date){where+=' AND a.date=?';params.push(filters.date);}
+  if(filters.month){where+=' AND strftime("%Y-%m",a.date)=?';params.push(filters.month);}
+  return queryAll(`SELECT a.*,e.name as employee_name,e.department FROM attendance a LEFT JOIN employees e ON a.employee_id=e.id WHERE ${where} ORDER BY a.date DESC`,params);
+}
+export function upsertAttendance(data) {
+  const existing=execCount('SELECT COUNT(*) FROM attendance WHERE employee_id=? AND date=?',[data.employee_id,data.date]);
+  if(existing>0){
+    runSql("UPDATE attendance SET check_in=?,check_out=?,hours_worked=?,overtime_hours=?,status=?,notes=? WHERE employee_id=? AND date=?",
+      [data.check_in||'',data.check_out||'',data.hours_worked||0,data.overtime_hours||0,data.status||'present',data.notes||'',data.employee_id,data.date]);
+  } else {
+    runSql(`INSERT INTO attendance (employee_id,date,check_in,check_out,hours_worked,overtime_hours,status,notes) VALUES (?,?,?,?,?,?,?,?)`,
+      [data.employee_id,data.date,data.check_in||'',data.check_out||'',data.hours_worked||0,data.overtime_hours||0,data.status||'present',data.notes||'']);
+  }
+  saveDb();
+}
+
+// ─── Payroll ─────────────────────────────────────────────────────────────────
+export function getNextPayrollNumber() {
+  const row=queryOne("SELECT payroll_number FROM payroll ORDER BY id DESC LIMIT 1");
+  if(!row||!row.payroll_number)return'PAY-EMP-0001';
+  return`PAY-EMP-${String((parseInt(row.payroll_number.replace('PAY-EMP-',''))||0)+1).padStart(4,'0')}`;
+}
+export function getPayroll(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.employee_id){where+=' AND p.employee_id=?';params.push(parseInt(filters.employee_id));}
+  if(filters.period_month){where+=' AND p.period_month=?';params.push(filters.period_month);}
+  if(filters.status){where+=' AND p.status=?';params.push(filters.status);}
+  const page=Math.max(1,parseInt(filters.page)||1),limit=50;
+  const total=execCount(`SELECT COUNT(*) FROM payroll p WHERE ${where}`,params);
+  const records=queryAll(`SELECT p.*,e.name as employee_name,e.department FROM payroll p LEFT JOIN employees e ON p.employee_id=e.id WHERE ${where} ORDER BY p.period_month DESC LIMIT ? OFFSET ?`,[...params,limit,(page-1)*limit]);
+  return{records,total,page,limit};
+}
+export function createPayroll(data) {
+  const num=getNextPayrollNumber();
+  const net=(data.basic_salary||0)+(data.allowances||0)+(data.overtime_pay||0)+(data.bonuses||0)-(data.deductions||0)-(data.tax_deduction||0)-(data.social_insurance||0);
+  runSql(`INSERT INTO payroll (payroll_number,employee_id,period_month,basic_salary,allowances,overtime_pay,bonuses,deductions,tax_deduction,social_insurance,net_salary,status,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [num,data.employee_id,data.period_month,data.basic_salary||0,data.allowances||0,data.overtime_pay||0,data.bonuses||0,data.deductions||0,data.tax_deduction||0,data.social_insurance||0,net,data.status||'draft',data.notes||'']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function updatePayroll(id,data) {
+  const f=[],p=[],allowed=['status','bonuses','deductions','tax_deduction','social_insurance','net_salary','paid_date','notes'];
+  for(const[k,v]of Object.entries(data)){if(allowed.includes(k)){f.push(`${k}=?`);p.push(v);}}
+  if(!f.length)return false; p.push(parseInt(id)); runSql(`UPDATE payroll SET ${f.join(',')} WHERE id=?`,p); saveDb(); return true;
+}
+
+// ─── Leave Requests ───────────────────────────────────────────────────────────
+export function getLeaveRequests(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.employee_id){where+=' AND lr.employee_id=?';params.push(parseInt(filters.employee_id));}
+  if(filters.status){where+=' AND lr.status=?';params.push(filters.status);}
+  return queryAll(`SELECT lr.*,e.name as employee_name FROM leave_requests lr LEFT JOIN employees e ON lr.employee_id=e.id WHERE ${where} ORDER BY lr.created_at DESC`,params);
+}
+export function createLeaveRequest(data) {
+  runSql(`INSERT INTO leave_requests (employee_id,leave_type,start_date,end_date,days,reason,status) VALUES (?,?,?,?,?,?,?)`,
+    [data.employee_id,data.leave_type||'annual',data.start_date,data.end_date,data.days||1,data.reason||'','pending']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function updateLeaveRequest(id,data) {
+  const f=[],p=[],allowed=['status','approved_by','notes'];
+  for(const[k,v]of Object.entries(data)){if(allowed.includes(k)){f.push(`${k}=?`);p.push(v);}}
+  if(!f.length)return false; p.push(parseInt(id)); runSql(`UPDATE leave_requests SET ${f.join(',')} WHERE id=?`,p); saveDb(); return true;
+}
+
+// ─── Chart of Accounts ────────────────────────────────────────────────────────
+export function getChartOfAccounts(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.account_type){where+=' AND account_type=?';params.push(filters.account_type);}
+  if(filters.is_active!==undefined){where+=' AND is_active=?';params.push(filters.is_active);}
+  return queryAll(`SELECT * FROM chart_of_accounts WHERE ${where} ORDER BY account_code`,params);
+}
+export function createAccount(data) {
+  runSql(`INSERT INTO chart_of_accounts (account_code,account_name,account_name_ar,account_type,parent_id,normal_balance,description) VALUES (?,?,?,?,?,?,?)`,
+    [data.account_code,data.account_name,data.account_name_ar||'',data.account_type,data.parent_id||null,data.normal_balance||'debit',data.description||'']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function updateAccount(id,data) {
+  const f=[],p=[],allowed=['account_name','account_name_ar','account_type','parent_id','normal_balance','description','is_active'];
+  for(const[k,v]of Object.entries(data)){if(allowed.includes(k)){f.push(`${k}=?`);p.push(v);}}
+  if(!f.length)return false; p.push(parseInt(id)); runSql(`UPDATE chart_of_accounts SET ${f.join(',')} WHERE id=?`,p); saveDb(); return true;
+}
+
+// ─── Journal Entries ─────────────────────────────────────────────────────────
+export function getNextJournalNumber() {
+  const row=queryOne("SELECT entry_number FROM journal_entries ORDER BY id DESC LIMIT 1");
+  if(!row||!row.entry_number)return'JE-0001';
+  return`JE-${String((parseInt(row.entry_number.replace('JE-',''))||0)+1).padStart(4,'0')}`;
+}
+export function getJournalEntries(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.dateFrom){where+=' AND date>=?';params.push(filters.dateFrom);}
+  if(filters.dateTo){where+=' AND date<=?';params.push(filters.dateTo);}
+  if(filters.source_type){where+=' AND source_type=?';params.push(filters.source_type);}
+  if(filters.search){where+=' AND (entry_number LIKE ? OR description LIKE ?)';const s=`%${filters.search}%`;params.push(s,s);}
+  const page=Math.max(1,parseInt(filters.page)||1),limit=50;
+  const total=execCount(`SELECT COUNT(*) FROM journal_entries WHERE ${where}`,params);
+  const entries=queryAll(`SELECT * FROM journal_entries WHERE ${where} ORDER BY date DESC,id DESC LIMIT ? OFFSET ?`,[...params,limit,(page-1)*limit]);
+  return{entries,total,page,limit};
+}
+export function getJournalEntryById(id) {
+  const entry=queryOne('SELECT * FROM journal_entries WHERE id=?',[parseInt(id)]);
+  if(!entry)return null;
+  entry.lines=queryAll('SELECT jl.*,a.account_code,a.account_name FROM journal_lines jl LEFT JOIN chart_of_accounts a ON jl.account_id=a.id WHERE jl.entry_id=?',[parseInt(id)]);
+  return entry;
+}
+export function createJournalEntry(data) {
+  const num=data.entry_number||getNextJournalNumber();
+  runSql(`INSERT INTO journal_entries (entry_number,date,description,reference,source_type,source_id,status,created_by) VALUES (?,?,?,?,?,?,?,?)`,
+    [num,data.date||new Date().toISOString().slice(0,10),data.description||'',data.reference||'',data.source_type||'manual',data.source_id||null,data.status||'posted',data.created_by||'admin']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); const entryId=row?.id;
+  if(data.lines?.length){
+    for(const line of data.lines){
+      runSql(`INSERT INTO journal_lines (entry_id,account_id,debit,credit,description) VALUES (?,?,?,?,?)`,
+        [entryId,line.account_id,line.debit||0,line.credit||0,line.description||'']);
+    }
+  }
+  saveDb(); return entryId;
+}
+export function deleteJournalEntry(id){
+  runSql('DELETE FROM journal_lines WHERE entry_id=?',[parseInt(id)]);
+  runSql('DELETE FROM journal_entries WHERE id=?',[parseInt(id)]);
+  saveDb();
+}
+export function getTrialBalance() {
+  return queryAll(`
+    SELECT a.account_code,a.account_name,a.account_name_ar,a.account_type,a.normal_balance,
+      COALESCE(SUM(jl.debit),0) as total_debit, COALESCE(SUM(jl.credit),0) as total_credit,
+      CASE WHEN a.normal_balance='debit' THEN COALESCE(SUM(jl.debit),0)-COALESCE(SUM(jl.credit),0)
+           ELSE COALESCE(SUM(jl.credit),0)-COALESCE(SUM(jl.debit),0) END as balance
+    FROM chart_of_accounts a LEFT JOIN journal_lines jl ON a.id=jl.account_id
+    WHERE a.is_active=1
+    GROUP BY a.id ORDER BY a.account_code`);
+}
+
+// ─── Bank Accounts & Transactions ────────────────────────────────────────────
+export function getBankAccounts() { return queryAll('SELECT * FROM bank_accounts WHERE is_active=1 ORDER BY account_name'); }
+export function createBankAccount(data) {
+  runSql(`INSERT INTO bank_accounts (account_name,bank_name,account_number,iban,currency,opening_balance,current_balance,notes) VALUES (?,?,?,?,?,?,?,?)`,
+    [data.account_name,data.bank_name,data.account_number||'',data.iban||'',data.currency||'EGP',data.opening_balance||0,data.opening_balance||0,data.notes||'']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function updateBankAccount(id,data) {
+  const f=[],p=[],allowed=['account_name','bank_name','account_number','iban','currency','current_balance','notes','is_active'];
+  for(const[k,v]of Object.entries(data)){if(allowed.includes(k)){f.push(`${k}=?`);p.push(v);}}
+  if(!f.length)return false; f.push("updated_at=datetime('now')"); p.push(parseInt(id));
+  runSql(`UPDATE bank_accounts SET ${f.join(',')} WHERE id=?`,p); saveDb(); return true;
+}
+export function getBankTransactions(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.bank_account_id){where+=' AND bank_account_id=?';params.push(parseInt(filters.bank_account_id));}
+  if(filters.is_reconciled!==undefined){where+=' AND is_reconciled=?';params.push(filters.is_reconciled);}
+  if(filters.dateFrom){where+=' AND transaction_date>=?';params.push(filters.dateFrom);}
+  if(filters.dateTo){where+=' AND transaction_date<=?';params.push(filters.dateTo);}
+  const page=Math.max(1,parseInt(filters.page)||1),limit=50;
+  const total=execCount(`SELECT COUNT(*) FROM bank_transactions WHERE ${where}`,params);
+  const txns=queryAll(`SELECT bt.*,ba.account_name,ba.bank_name FROM bank_transactions bt LEFT JOIN bank_accounts ba ON bt.bank_account_id=ba.id WHERE ${where} ORDER BY bt.transaction_date DESC LIMIT ? OFFSET ?`,[...params,limit,(page-1)*limit]);
+  return{transactions:txns,total,page,limit};
+}
+export function createBankTransaction(data) {
+  runSql(`INSERT INTO bank_transactions (bank_account_id,transaction_date,description,reference,debit,credit,balance,payment_id) VALUES (?,?,?,?,?,?,?,?)`,
+    [data.bank_account_id,data.transaction_date||new Date().toISOString().slice(0,10),data.description||'',data.reference||'',data.debit||0,data.credit||0,data.balance||0,data.payment_id||null]);
+  if(data.debit)runSql('UPDATE bank_accounts SET current_balance=current_balance-?,updated_at=datetime("now") WHERE id=?',[data.debit,data.bank_account_id]);
+  if(data.credit)runSql('UPDATE bank_accounts SET current_balance=current_balance+?,updated_at=datetime("now") WHERE id=?',[data.credit,data.bank_account_id]);
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function reconcileTransaction(id) {
+  runSql("UPDATE bank_transactions SET is_reconciled=1,reconciled_at=datetime('now') WHERE id=?",[parseInt(id)]);
+  saveDb();
+}
+
+// ─── Fixed Assets ─────────────────────────────────────────────────────────────
+export function getFixedAssets(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.category){where+=' AND category=?';params.push(filters.category);}
+  if(filters.status){where+=' AND status=?';params.push(filters.status);}
+  if(filters.search){where+=' AND (asset_name LIKE ? OR asset_code LIKE ?)';const s=`%${filters.search}%`;params.push(s,s);}
+  const page=Math.max(1,parseInt(filters.page)||1),limit=50;
+  const total=execCount(`SELECT COUNT(*) FROM fixed_assets WHERE ${where}`,params);
+  const assets=queryAll(`SELECT * FROM fixed_assets WHERE ${where} ORDER BY asset_name ASC LIMIT ? OFFSET ?`,[...params,limit,(page-1)*limit]);
+  return{assets,total,page,limit};
+}
+export function getAssetById(id){return queryOne('SELECT * FROM fixed_assets WHERE id=?',[parseInt(id)]);}
+export function createFixedAsset(data) {
+  const code=data.asset_code||`AST-${Date.now().toString().slice(-6)}`;
+  const currentValue=data.purchase_price||0;
+  runSql(`INSERT INTO fixed_assets (asset_code,asset_name,category,description,purchase_date,purchase_price,salvage_value,useful_life_years,depreciation_method,current_value,location,status,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [code,data.asset_name,data.category||'',data.description||'',data.purchase_date||'',data.purchase_price||0,data.salvage_value||0,data.useful_life_years||5,data.depreciation_method||'straight_line',currentValue,data.location||'',data.status||'active',data.notes||'']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function updateFixedAsset(id,data) {
+  const f=[],p=[],allowed=['asset_name','category','description','purchase_date','purchase_price','salvage_value','useful_life_years','depreciation_method','accumulated_depreciation','current_value','location','status','notes'];
+  for(const[k,v]of Object.entries(data)){if(allowed.includes(k)){f.push(`${k}=?`);p.push(v);}}
+  if(!f.length)return false; f.push("updated_at=datetime('now')"); p.push(parseInt(id));
+  runSql(`UPDATE fixed_assets SET ${f.join(',')} WHERE id=?`,p); saveDb(); return true;
+}
+export function deleteFixedAsset(id){runSql('DELETE FROM fixed_assets WHERE id=?',[parseInt(id)]);saveDb();}
+export function calculateMonthlyDepreciation(id) {
+  const asset=getAssetById(id);
+  if(!asset||asset.status!=='active')return null;
+  const depreciable=asset.purchase_price-asset.salvage_value;
+  let monthly=0;
+  if(asset.depreciation_method==='straight_line'){
+    monthly=depreciable/(asset.useful_life_years*12);
+  } else if(asset.depreciation_method==='declining_balance'){
+    const rate=2/(asset.useful_life_years*12);
+    monthly=asset.current_value*rate;
+  }
+  monthly=parseFloat(monthly.toFixed(2));
+  const period=new Date().toISOString().slice(0,7);
+  const newAccum=(asset.accumulated_depreciation||0)+monthly;
+  const newValue=Math.max(asset.salvage_value,asset.purchase_price-newAccum);
+  runSql(`INSERT INTO asset_depreciation (asset_id,period,depreciation_amount,accumulated_total,book_value) VALUES (?,?,?,?,?)`,
+    [id,period,monthly,newAccum,newValue]);
+  runSql("UPDATE fixed_assets SET accumulated_depreciation=?,current_value=?,updated_at=datetime('now') WHERE id=?",[newAccum,newValue,id]);
+  saveDb(); return{period,monthly,newAccum,newValue};
+}
+
+// ─── Tax Rates ────────────────────────────────────────────────────────────────
+export function getTaxRates() { return queryAll('SELECT * FROM tax_rates WHERE is_active=1 ORDER BY rate'); }
+export function createTaxRate(data) {
+  runSql(`INSERT INTO tax_rates (name,rate,type,is_default,is_active) VALUES (?,?,?,?,?)`,
+    [data.name,data.rate,data.type||'vat',data.is_default?1:0,1]);
+  if(data.is_default){runSql('UPDATE tax_rates SET is_default=0 WHERE id != (SELECT MAX(id) FROM tax_rates)');}
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function updateTaxRate(id,data) {
+  const f=[],p=[],allowed=['name','rate','type','is_default','is_active'];
+  for(const[k,v]of Object.entries(data)){if(allowed.includes(k)){f.push(`${k}=?`);p.push(v);}}
+  if(!f.length)return false; p.push(parseInt(id)); runSql(`UPDATE tax_rates SET ${f.join(',')} WHERE id=?`,p); saveDb(); return true;
+}
+export function deleteTaxRate(id){runSql('UPDATE tax_rates SET is_active=0 WHERE id=?',[parseInt(id)]);saveDb();}
+
+// ─── Currencies & Exchange Rates ──────────────────────────────────────────────
+export function getCurrencies() { return queryAll('SELECT * FROM currencies WHERE is_active=1'); }
+export function getExchangeRates() {
+  return queryAll('SELECT * FROM exchange_rates ORDER BY effective_date DESC');
+}
+export function upsertExchangeRate(from_currency,to_currency,rate) {
+  const existing=execCount('SELECT COUNT(*) FROM exchange_rates WHERE from_currency=? AND to_currency=? AND effective_date=date("now")',[from_currency,to_currency]);
+  if(existing>0){
+    runSql('UPDATE exchange_rates SET rate=? WHERE from_currency=? AND to_currency=? AND effective_date=date("now")',[rate,from_currency,to_currency]);
+  } else {
+    runSql('INSERT INTO exchange_rates (from_currency,to_currency,rate) VALUES (?,?,?)',[from_currency,to_currency,rate]);
+  }
+  saveDb();
+}
+export function convertCurrency(amount,fromCurrency,toCurrency) {
+  if(fromCurrency===toCurrency)return amount;
+  const rate=queryOne('SELECT rate FROM exchange_rates WHERE from_currency=? AND to_currency=? ORDER BY effective_date DESC LIMIT 1',[fromCurrency,toCurrency]);
+  if(!rate)return amount;
+  return parseFloat((amount*rate.rate).toFixed(2));
+}
+
+// ─── Warehouses & Stock Transfers ────────────────────────────────────────────
+export function getWarehouses() { return queryAll('SELECT * FROM warehouses WHERE is_active=1 ORDER BY name'); }
+export function createWarehouse(data) {
+  runSql(`INSERT INTO warehouses (name,code,address,is_active) VALUES (?,?,?,1)`,[data.name,data.code||data.name.slice(0,6).toUpperCase(),data.address||'']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function getWarehouseLocations(warehouseId) {
+  return queryAll('SELECT * FROM warehouse_locations WHERE warehouse_id=? AND is_active=1',[parseInt(warehouseId)]);
+}
+export function createWarehouseLocation(data) {
+  runSql(`INSERT INTO warehouse_locations (warehouse_id,zone,aisle,shelf,bin,name) VALUES (?,?,?,?,?,?)`,
+    [data.warehouse_id,data.zone||'',data.aisle||'',data.shelf||'',data.bin||'',data.name||'']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); saveDb(); return row?.id;
+}
+export function getStockTransfers(filters={}) {
+  let where='1=1'; const params=[];
+  if(filters.status){where+=' AND st.status=?';params.push(filters.status);}
+  const page=Math.max(1,parseInt(filters.page)||1),limit=50;
+  const total=execCount(`SELECT COUNT(*) FROM stock_transfers st WHERE ${where}`,params);
+  const transfers=queryAll(`SELECT st.*,fw.name as from_warehouse,tw.name as to_warehouse FROM stock_transfers st LEFT JOIN warehouses fw ON st.from_warehouse_id=fw.id LEFT JOIN warehouses tw ON st.to_warehouse_id=tw.id WHERE ${where} ORDER BY st.transfer_date DESC LIMIT ? OFFSET ?`,[...params,limit,(page-1)*limit]);
+  return{transfers,total,page,limit};
+}
+export function createStockTransfer(data) {
+  const num=`TRF-${Date.now().toString().slice(-6)}`;
+  runSql(`INSERT INTO stock_transfers (transfer_number,from_warehouse_id,to_warehouse_id,status,transfer_date,notes,created_by) VALUES (?,?,?,?,?,?,?)`,
+    [num,data.from_warehouse_id||null,data.to_warehouse_id||null,data.status||'draft',data.transfer_date||new Date().toISOString().slice(0,10),data.notes||'',data.created_by||'admin']);
+  const row=queryOne('SELECT last_insert_rowid() as id'); const tId=row?.id;
+  if(data.items?.length){
+    for(const it of data.items){
+      runSql(`INSERT INTO stock_transfer_items (transfer_id,sku,product_name,quantity,from_location_id,to_location_id) VALUES (?,?,?,?,?,?)`,
+        [tId,it.sku||'',it.product_name||'',it.quantity||0,it.from_location_id||null,it.to_location_id||null]);
+    }
+    if(data.status==='completed'){
+      for(const it of data.items){
+        if(it.sku){
+          runSql("UPDATE inventory SET stock_quantity=COALESCE(stock_quantity,0)-?,updated_at=datetime('now') WHERE sku=?",[it.quantity,it.sku]);
+        }
+      }
+    }
+  }
+  saveDb(); return tId;
+}
+
+// ─── Recurring Invoices Processor ─────────────────────────────────────────────
+export function processRecurringInvoices() {
+  const today=new Date().toISOString().slice(0,10);
+  const due=queryAll("SELECT * FROM recurring_invoices WHERE is_active=1 AND (next_date='' OR next_date<=?) AND (end_date='' OR end_date>=?)",[today,today]);
+  const created=[];
+  for(const rec of due){
+    try{
+      const template=JSON.parse(rec.template_json||'{}');
+      template.customer_id=rec.customer_id;
+      template.date=today;
+      template.status='draft';
+      const invId=createInvoice(template);
+      const freq=rec.frequency;
+      const nextDate=new Date(today);
+      if(freq==='weekly')nextDate.setDate(nextDate.getDate()+7);
+      else if(freq==='monthly')nextDate.setMonth(nextDate.getMonth()+1);
+      else if(freq==='quarterly')nextDate.setMonth(nextDate.getMonth()+3);
+      else if(freq==='yearly')nextDate.setFullYear(nextDate.getFullYear()+1);
+      runSql("UPDATE recurring_invoices SET next_date=?,last_generated=?,generated_count=COALESCE(generated_count,0)+1 WHERE id=?",
+        [nextDate.toISOString().slice(0,10),today,rec.id]);
+      created.push({recurringId:rec.id,invoiceId:invId});
+    }catch(e){console.error('[Recurring] Failed:',e.message);}
+  }
+  if(created.length)saveDb();
+  return created;
 }

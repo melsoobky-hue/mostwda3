@@ -17,11 +17,13 @@ export async function launchBrowser(source, headless = true) {
   const hasSaved = hasCookies(source);
   const actualHeadless = hasSaved ? headless : false;
 
-  const context = await chromium.launch({
+  const browser = await chromium.launch({
     headless: actualHeadless,
     args: ['--disable-blink-features=AutomationControlled', '--no-sandbox'],
     ignoreDefaultArgs: ['--enable-automation'],
   });
+
+  const context = await browser.newContext();
 
   const cookiesPath = getCookiesPath(source);
   if (existsSync(cookiesPath)) {
@@ -34,6 +36,7 @@ export async function launchBrowser(source, headless = true) {
     }
   }
 
+  context._browser = browser;
   return context;
 }
 
@@ -52,6 +55,7 @@ export async function closeBrowser(context, source) {
     await saveCookies(context, source);
   }
   await context.close();
+  if (context._browser) await context._browser.close();
 }
 
 export async function isLoggedIn(page, source) {
