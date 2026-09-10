@@ -32,8 +32,15 @@ export function saveDb() {
   }
 }
 
+function runSql(sql, params = []) {
+  const stmt = db.prepare(sql);
+  if (params.length) stmt.bind(params);
+  stmt.step();
+  stmt.free();
+}
+
 function initSchema() {
-  db.run(`
+  runSql(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       source TEXT NOT NULL,
@@ -86,7 +93,7 @@ function initSchema() {
     );
   `);
 
-  db.run(`
+  runSql(`
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT DEFAULT '',
@@ -132,7 +139,7 @@ function initSchema() {
     );
   `);
 
-  db.run(`
+  runSql(`
     CREATE TABLE IF NOT EXISTS sync_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       source TEXT,
@@ -147,7 +154,7 @@ function initSchema() {
     );
   `);
 
-  db.run(`
+  runSql(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
@@ -175,11 +182,11 @@ function initSchema() {
     'CREATE INDEX IF NOT EXISTS idx_rules_type ON rules(type)',
   ];
   for (const idx of indexes) {
-    try { db.run(idx); } catch (_) {}
+    try { runSql(idx); } catch (_) {}
   }
 
   // ── New tables for v2 features ──────────────────────────────────────────────
-  db.run(`
+  runSql(`
     CREATE TABLE IF NOT EXISTS expenses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       category TEXT NOT NULL,
@@ -191,7 +198,7 @@ function initSchema() {
     );
   `);
 
-  db.run(`
+  runSql(`
     CREATE TABLE IF NOT EXISTS inventory (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       sku TEXT UNIQUE,
@@ -208,7 +215,7 @@ function initSchema() {
     );
   `);
 
-  db.run(`
+  runSql(`
     CREATE TABLE IF NOT EXISTS auth (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       pin TEXT NOT NULL,
@@ -219,7 +226,7 @@ function initSchema() {
     );
   `);
 
-  db.run(`
+  runSql(`
     CREATE TABLE IF NOT EXISTS shipments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       order_id INTEGER,
@@ -238,7 +245,7 @@ function initSchema() {
     );
   `);
 
-  db.run(`
+  runSql(`
     CREATE TABLE IF NOT EXISTS rules (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT DEFAULT '',
@@ -252,7 +259,7 @@ function initSchema() {
     );
   `);
 
-  db.run(`
+  runSql(`
     CREATE TABLE IF NOT EXISTS order_status_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       order_id INTEGER,
@@ -269,7 +276,7 @@ function initSchema() {
   // Insert default admin PIN if none exists
   const authCount = execCount('SELECT COUNT(*) FROM auth');
   if (authCount === 0) {
-    db.run("INSERT INTO auth (pin, name, role) VALUES ('1234', 'Admin', 'admin')");
+    runSql("INSERT INTO auth (pin, name, role) VALUES ('1234', 'Admin', 'admin')");
   }
 }
 
@@ -347,7 +354,7 @@ export function upsertOrder(order) {
   ];
 
   if (existing > 0) {
-    db.run(`
+    runSql(`
       UPDATE orders SET
         customer_name=?,customer_phone=?,customer_email=?,customer_address=?,
         customer_governorate=?,customer_delivery_zone=?,customer_notes=?,
@@ -364,7 +371,7 @@ export function upsertOrder(order) {
     saveDb();
     return 'updated';
   } else {
-    db.run(`
+    runSql(`
       INSERT INTO orders (
         customer_name,customer_phone,customer_email,customer_address,
         customer_governorate,customer_delivery_zone,customer_notes,
@@ -454,7 +461,7 @@ export function upsertProduct(product) {
   ];
 
   if (existing > 0) {
-    db.run(`
+    runSql(`
       UPDATE products SET
         name=?,name_ar=?,barcode=?,category=?,category_ar=?,subcategory=?,
         mirror_type=?,mirror_shape=?,dimensions=?,width=?,height=?,depth=?,weight=?,
@@ -469,7 +476,7 @@ export function upsertProduct(product) {
     saveDb();
     return 'updated';
   } else {
-    db.run(`
+    runSql(`
       INSERT INTO products (
         name,name_ar,sku,barcode,category,category_ar,subcategory,
         mirror_type,mirror_shape,dimensions,width,height,depth,weight,
@@ -659,7 +666,7 @@ export function getAnalytics(dateFrom, dateTo) {
  * @param {{ ordersSynced?: number, productsSynced?: number, durationMs?: number }} extra
  */
 export function logSync(source, status, recordsSynced, errorMessage, startedAt, extra = {}) {
-  db.run(`
+  runSql(`
     INSERT INTO sync_logs
       (source, status, records_synced, orders_synced, products_synced,
        error_message, duration_ms, started_at, completed_at)
@@ -691,9 +698,9 @@ export function getSetting(key) {
 export function setSetting(key, value) {
   const exists = execCount('SELECT COUNT(*) FROM settings WHERE key = ?', [key]);
   if (exists > 0) {
-    db.run('UPDATE settings SET value = ? WHERE key = ?', [value, key]);
+    runSql('UPDATE settings SET value = ? WHERE key = ?', [value, key]);
   } else {
-    db.run('INSERT INTO settings (key, value) VALUES (?, ?)', [key, value]);
+    runSql('INSERT INTO settings (key, value) VALUES (?, ?)', [key, value]);
   }
   saveDb();
 }
@@ -701,7 +708,7 @@ export function setSetting(key, value) {
 // ─── Expenses ───────────────────────────────────────────────────────────────
 
 export function addExpense(expense) {
-  db.run(
+  runSql(
     'INSERT INTO expenses (category, description, amount, date, notes) VALUES (?,?,?,?,?)',
     [expense.category, expense.description || '', expense.amount || 0, expense.date || '', expense.notes || '']
   );
@@ -720,7 +727,7 @@ export function getExpenses(filters = {}) {
 }
 
 export function deleteExpense(id) {
-  db.run('DELETE FROM expenses WHERE id = ?', [parseInt(id)]);
+  runSql('DELETE FROM expenses WHERE id = ?', [parseInt(id)]);
   saveDb();
 }
 
@@ -750,14 +757,14 @@ export function syncInventoryFromProducts() {
   for (const p of products) {
     const existing = execCount('SELECT COUNT(*) FROM inventory WHERE sku = ?', [p.sku]);
     if (existing === 0) {
-      db.run(
+      runSql(
         `INSERT INTO inventory (sku, name, stock_quantity, low_stock_threshold, reorder_point, reorder_quantity, cost) VALUES (?,?,?,?,?,?,?)`,
         [p.sku, p.name || '', p.stock_quantity || 0, p.low_stock_threshold || 5, Math.max(5, Math.floor((p.stock_quantity || 0) * 0.3)), Math.max(10, Math.floor((p.stock_quantity || 0) * 0.5)), p.cost || 0]
       );
       synced++;
     } else {
       // Update stock from synced products
-      db.run(
+      runSql(
         `UPDATE inventory SET stock_quantity = ?, cost = CASE WHEN ? > 0 THEN ? ELSE cost END, updated_at = datetime('now') WHERE sku = ?`,
         [p.stock_quantity || 0, p.cost || 0, p.cost || 0, p.sku]
       );
@@ -770,12 +777,12 @@ export function syncInventoryFromProducts() {
 export function upsertInventory(item) {
   const existing = execCount('SELECT COUNT(*) FROM inventory WHERE sku = ?', [item.sku]);
   if (existing > 0) {
-    db.run(
+    runSql(
       `UPDATE inventory SET name=?, stock_quantity=?, low_stock_threshold=?, reorder_point=?, reorder_quantity=?, cost=?, notes=?, updated_at=datetime('now') WHERE sku=?`,
       [item.name || '', item.stock_quantity || 0, item.low_stock_threshold || 5, item.reorder_point || 10, item.reorder_quantity || 20, item.cost || 0, item.notes || '', item.sku]
     );
   } else {
-    db.run(
+    runSql(
       `INSERT INTO inventory (sku, name, stock_quantity, low_stock_threshold, reorder_point, reorder_quantity, cost, last_restocked, notes) VALUES (?,?,?,?,?,?,?,?,?)`,
       [item.sku, item.name || '', item.stock_quantity || 0, item.low_stock_threshold || 5, item.reorder_point || 10, item.reorder_quantity || 20, item.cost || 0, item.last_restocked || '', item.notes || '']
     );
@@ -798,7 +805,7 @@ export function getInventory(filters = {}) {
 }
 
 export function updateStock(sku, quantity, notes) {
-  db.run(
+  runSql(
     `UPDATE inventory SET stock_quantity = ?, last_restocked = datetime('now'), notes = ?, updated_at = datetime('now') WHERE sku = ?`,
     [quantity, notes || '', sku]
   );
@@ -819,7 +826,7 @@ export function verifyPin(pin) {
 export function changePin(oldPin, newPin, name) {
   const user = verifyPin(oldPin);
   if (!user) return null;
-  db.run('UPDATE auth SET pin = ?, name = COALESCE(?, name) WHERE id = ?', [newPin, name || null, user.id]);
+  runSql('UPDATE auth SET pin = ?, name = COALESCE(?, name) WHERE id = ?', [newPin, name || null, user.id]);
   saveDb();
   return 'updated';
 }
@@ -831,7 +838,7 @@ export function getAuthUsers() {
 // ─── Shipments ──────────────────────────────────────────────────────────────
 
 export function addShipment(shipment) {
-  db.run(
+  runSql(
     `INSERT INTO shipments (order_id, source, source_order_id, shipping_company, tracking_number, status, status_ar, pickup_date, delivery_date, notes, raw_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
     [shipment.order_id || null, shipment.source || '', shipment.source_order_id || '', shipment.shipping_company || '', shipment.tracking_number || '', shipment.status || '', shipment.status_ar || '', shipment.pickup_date || '', shipment.delivery_date || '', shipment.notes || '', shipment.raw_data ? JSON.stringify(shipment.raw_data) : '']
   );
@@ -861,7 +868,7 @@ export function updateShipment(id, updates) {
   if (fields.length === 0) return 'no changes';
   fields.push("updated_at = datetime('now')");
   params.push(parseInt(id));
-  db.run(`UPDATE shipments SET ${fields.join(', ')} WHERE id = ?`, params);
+  runSql(`UPDATE shipments SET ${fields.join(', ')} WHERE id = ?`, params);
   saveDb();
   return 'updated';
 }
@@ -873,17 +880,17 @@ export function updateOrderStatus(source, sourceOrderId, newStatus, changedBy, n
   if (!order) return null;
 
   const oldStatus = order.status || '';
-  db.run('UPDATE orders SET status = ?, updated_at = datetime(\'now\') WHERE id = ?', [newStatus, order.id]);
-  db.run(
+  runSql('UPDATE orders SET status = ?, updated_at = datetime(\'now\') WHERE id = ?', [newStatus, order.id]);
+  runSql(
     'INSERT INTO order_status_history (order_id, source, source_order_id, old_status, new_status, changed_by, notes) VALUES (?,?,?,?,?,?,?)',
     [order.id, source, sourceOrderId, oldStatus, newStatus, changedBy || 'user', notes || '']
   );
 
   // Update shipment status if exists
   if (newStatus === 'Shipped') {
-    db.run("UPDATE shipments SET status = 'In Transit', status_ar = 'في الطريق' WHERE order_id = ?", [order.id]);
+    runSql("UPDATE shipments SET status = 'In Transit', status_ar = 'في الطريق' WHERE order_id = ?", [order.id]);
   } else if (newStatus === 'Delivered') {
-    db.run("UPDATE shipments SET status = 'Delivered', status_ar = 'تم التوصيل', delivery_date = datetime('now') WHERE order_id = ?", [order.id]);
+    runSql("UPDATE shipments SET status = 'Delivered', status_ar = 'تم التوصيل', delivery_date = datetime('now') WHERE order_id = ?", [order.id]);
   }
 
   saveDb();
@@ -897,7 +904,7 @@ export function getOrderStatusHistory(orderId) {
 // ─── Rules ──────────────────────────────────────────────────────────────────
 
 export function addRule(rule) {
-  db.run(
+  runSql(
     `INSERT INTO rules (name, type, condition_json, action_json, is_active) VALUES (?,?,?,?,?)`,
     [rule.name || '', rule.type || '', JSON.stringify(rule.condition || {}), JSON.stringify(rule.action || {}), rule.is_active != null ? rule.is_active : 1]
   );
@@ -918,13 +925,13 @@ export function updateRule(id, updates) {
   if (updates.action_json != null) { fields.push('action_json = ?'); params.push(updates.action_json); }
   if (fields.length === 0) return 'no changes';
   params.push(parseInt(id));
-  db.run(`UPDATE rules SET ${fields.join(', ')} WHERE id = ?`, params);
+  runSql(`UPDATE rules SET ${fields.join(', ')} WHERE id = ?`, params);
   saveDb();
   return 'updated';
 }
 
 export function deleteRule(id) {
-  db.run('DELETE FROM rules WHERE id = ?', [parseInt(id)]);
+  runSql('DELETE FROM rules WHERE id = ?', [parseInt(id)]);
   saveDb();
 }
 
@@ -1099,7 +1106,6 @@ export function getCustomerOrders(phone) {
 // ─── Seed Data ─────────────────────────────────────────────────────────────
 
 export function seedInventoryFromProducts() {
-  const db = getDb();
   const existing = execCount('SELECT COUNT(*) FROM inventory');
   if (existing > 0) return { seeded: 0, message: 'Inventory already has data' };
 
@@ -1108,10 +1114,8 @@ export function seedInventoryFromProducts() {
 
   for (const p of products) {
     try {
-      db.run(`
-        INSERT OR IGNORE INTO inventory (sku, name, stock_quantity, low_stock_threshold, cost)
-        VALUES (?, ?, ?, ?, ?)
-      `, [p.sku, p.name, Math.floor(Math.random() * 50) + 5, 5, p.cost || 0]);
+      runSql('INSERT OR IGNORE INTO inventory (sku, name, stock_quantity, low_stock_threshold, cost) VALUES (?, ?, ?, ?, ?)',
+        [p.sku, p.name, Math.floor(Math.random() * 50) + 5, 5, p.cost || 0]);
       seeded++;
     } catch (e) { /* skip duplicates */ }
   }
@@ -1121,7 +1125,6 @@ export function seedInventoryFromProducts() {
 }
 
 export function seedDemoExpenses() {
-  const db = getDb();
   const existing = execCount('SELECT COUNT(*) FROM expenses');
   if (existing > 0) return { seeded: 0, message: 'Expenses already has data' };
 
@@ -1142,10 +1145,8 @@ export function seedDemoExpenses() {
   for (const e of categories) {
     const month = String(Math.floor(Math.random() * 3) + 7).padStart(2, '0');
     const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
-    db.run(`
-      INSERT INTO expenses (category, description, amount, date)
-      VALUES (?, ?, ?, ?)
-    `, [e.category, e.desc, e.amount, `2026-${month}-${day}`]);
+    runSql('INSERT INTO expenses (category, description, amount, date) VALUES (?, ?, ?, ?)',
+      [e.category, e.desc, e.amount, `2026-${month}-${day}`]);
     seeded++;
   }
 
