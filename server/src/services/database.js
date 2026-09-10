@@ -1095,3 +1095,60 @@ export function getCustomerOrders(phone) {
     [phone]
   );
 }
+
+// ─── Seed Data ─────────────────────────────────────────────────────────────
+
+export function seedInventoryFromProducts() {
+  const db = getDb();
+  const existing = execCount('SELECT COUNT(*) FROM inventory');
+  if (existing > 0) return { seeded: 0, message: 'Inventory already has data' };
+
+  const products = queryAll('SELECT sku, name, price, cost FROM products WHERE sku IS NOT NULL AND sku != ""');
+  let seeded = 0;
+
+  for (const p of products) {
+    try {
+      db.run(`
+        INSERT OR IGNORE INTO inventory (sku, name, stock_quantity, low_stock_threshold, cost)
+        VALUES (?, ?, ?, ?, ?)
+      `, [p.sku, p.name, Math.floor(Math.random() * 50) + 5, 5, p.cost || 0]);
+      seeded++;
+    } catch (e) { /* skip duplicates */ }
+  }
+
+  saveDb();
+  return { seeded, message: `Seeded ${seeded} inventory items from products` };
+}
+
+export function seedDemoExpenses() {
+  const db = getDb();
+  const existing = execCount('SELECT COUNT(*) FROM expenses');
+  if (existing > 0) return { seeded: 0, message: 'Expenses already has data' };
+
+  const categories = [
+    { category: 'Rent', desc: 'Monthly office rent', amount: 8500 },
+    { category: 'Utilities', desc: 'Electricity bill', amount: 1200 },
+    { category: 'Utilities', desc: 'Internet & phone', amount: 650 },
+    { category: 'Marketing', desc: 'Facebook ads', amount: 3500 },
+    { category: 'Marketing', desc: 'Instagram promotions', amount: 1800 },
+    { category: 'Salaries', desc: 'Staff salaries', amount: 25000 },
+    { category: 'Packaging', desc: 'Boxes & materials', amount: 2200 },
+    { category: 'Transport', desc: 'Delivery van fuel', amount: 1500 },
+    { category: 'Office', desc: 'Office supplies', amount: 450 },
+    { category: 'Insurance', desc: 'Business insurance', amount: 1200 },
+  ];
+
+  let seeded = 0;
+  for (const e of categories) {
+    const month = String(Math.floor(Math.random() * 3) + 7).padStart(2, '0');
+    const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+    db.run(`
+      INSERT INTO expenses (category, description, amount, date)
+      VALUES (?, ?, ?, ?)
+    `, [e.category, e.desc, e.amount, `2026-${month}-${day}`]);
+    seeded++;
+  }
+
+  saveDb();
+  return { seeded, message: `Seeded ${seeded} demo expenses` };
+}

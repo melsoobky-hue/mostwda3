@@ -1,4 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" fill="none">
-  <rect width="400" height="120" rx="16" fill="#0098d4"/>
-  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="#f5c518" font-family="Arial, sans-serif" font-weight="900" font-size="56" direction="rtl">مستودع</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="20" fill="#4F46E5"/>
+  <path d="M100 30 L170 100 L100 170 L30 100 Z" fill="none" stroke="white" stroke-width="3"/>
+  <path d="M100 50 L155 100 L100 150 L45 100 Z" fill="rgba(255,255,255,0.15)"/>
+  <path d="M100 70 L140 100 L100 130 L60 100 Z" fill="rgba(255,255,255,0.25)"/>
+  <circle cx="100" cy="100" r="15" fill="white"/>
+  <circle cx="100" cy="100" r="8" fill="#4F46E5"/>
+  <text x="100" y="192" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="white">MOSTAWDAA</text>
 </svg>

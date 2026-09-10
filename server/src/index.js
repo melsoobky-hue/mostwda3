@@ -17,8 +17,9 @@ import authRouter from './routes/auth.js';
 import orderStatusRouter from './routes/order-status.js';
 import rulesRouter from './routes/rules.js';
 import pnlRouter from './routes/pnl.js';
+import seedRouter from './routes/seed.js';
 import { startScheduler } from './services/scheduler.js';
-import { getDb } from './services/database.js';
+import { getDb, seedInventoryFromProducts, seedDemoExpenses } from './services/database.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -42,6 +43,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/order-status', orderStatusRouter);
 app.use('/api/rules', rulesRouter);
 app.use('/api/pnl', pnlRouter);
+app.use('/api/seed', seedRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -57,6 +59,10 @@ if (existsSync(clientDist)) {
 async function start() {
   await getDb();
   console.log('[Server] Database initialized');
+  const inv = seedInventoryFromProducts();
+  const exp = seedDemoExpenses();
+  if (inv.seeded > 0) console.log(`[Server] ${inv.message}`);
+  if (exp.seeded > 0) console.log(`[Server] ${exp.message}`);
   startScheduler();
   app.listen(PORT, () => {
     console.log(`[Server] Running on http://localhost:${PORT}`);

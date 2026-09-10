@@ -561,8 +561,8 @@ export default function Dashboard() {
                           <div style={{ width:26, height:26, borderRadius:8, flexShrink:0,
                             background:'var(--bg-hover)', border:'1px solid var(--border)',
                             display:'flex', alignItems:'center', justifyContent:'center',
-                            fontSize:11, fontWeight:700, color:'var(--text-secondary)',
-                            fontFamily:"'DM Serif Display',serif", fontSize:14 }}>
+                            fontSize:14, fontWeight:700, color:'var(--text-secondary)',
+                            fontFamily:"'DM Serif Display',serif" }}>
                             {(order.customer_name||'U')[0].toUpperCase()}
                           </div>
                           <span style={{ fontSize:12, color:'var(--text-primary)', fontWeight:500,
