@@ -17,6 +17,11 @@ const Settings   = lazy(() => import('./pages/Settings'));
 const Customers  = lazy(() => import('./pages/Customers'));
 const PnL        = lazy(() => import('./pages/PnL'));
 const Inventory  = lazy(() => import('./pages/Inventory'));
+const Invoices   = lazy(() => import('./pages/Invoices'));
+const Estimates  = lazy(() => import('./pages/Estimates'));
+const ProductsERP= lazy(() => import('./pages/ProductsERP'));
+const PaymentsPage = lazy(() => import('./pages/Payments'));
+const SalesPage  = lazy(() => import('./pages/Sales'));
 const Rules      = lazy(() => import('./pages/Rules'));
 
 /* ── Context ───────────────────────────────── */
@@ -52,6 +57,16 @@ const NAV_SECTIONS = [
       { to: '/products',  icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', labelKey: 'products' },
       { to: '/customers', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', labelKey: 'customers' },
       { to: '/inventory', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4', labelKey: 'inventory' },
+    ],
+  },
+  {
+    label: 'ERP',
+    links: [
+      { to: '/sales',       icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', labelKey: 'sales' },
+      { to: '/erp/invoices',  icon: 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z', labelKey: 'invoices' },
+      { to: '/erp/estimates', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', labelKey: 'estimates' },
+      { to: '/erp/products',  icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', labelKey: 'productsERP' },
+      { to: '/erp/payments',  icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z', labelKey: 'payments' },
     ],
   },
   {
@@ -270,6 +285,11 @@ const ROUTE_LABELS = {
   '/analytics': 'Analytics',
   '/pnl':       'Profit & Loss',
   '/inventory':  'Inventory',
+  '/sales':      'Sales',
+  '/erp/invoices': 'Invoices',
+  '/erp/estimates': 'Estimates',
+  '/erp/products': 'Products',
+  '/erp/payments': 'Payments',
   '/rules':     'Rules',
   '/sync':      'Sync',
   '/settings':  'Settings',
@@ -515,6 +535,11 @@ function LayoutInner({
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/pnl"       element={<PnL />} />
               <Route path="/inventory" element={<Inventory />} />
+              <Route path="/sales" element={<SalesPage />} />
+              <Route path="/erp/invoices" element={<Invoices />} />
+              <Route path="/erp/estimates" element={<Estimates />} />
+              <Route path="/erp/products" element={<ProductsERP />} />
+              <Route path="/erp/payments" element={<PaymentsPage />} />
               <Route path="/rules"     element={<Rules />} />
               <Route path="/sync"      element={<SyncPage />} />
               <Route path="/settings"  element={<Settings />} />

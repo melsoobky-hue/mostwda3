@@ -273,6 +273,260 @@ function initSchema() {
     );
   `);
 
+  // ─── ERP Tables ────────────────────────────────────────────────────────────
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS companies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      name_ar TEXT DEFAULT '',
+      tax_number TEXT DEFAULT '',
+      commercial_register TEXT DEFAULT '',
+      address TEXT DEFAULT '',
+      city TEXT DEFAULT '',
+      governorate TEXT DEFAULT '',
+      phone TEXT DEFAULT '',
+      email TEXT DEFAULT '',
+      website TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS customers_erp (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      name_ar TEXT DEFAULT '',
+      company_id INTEGER,
+      type TEXT DEFAULT 'individual',
+      tax_number TEXT DEFAULT '',
+      email TEXT DEFAULT '',
+      phone TEXT DEFAULT '',
+      phone2 TEXT DEFAULT '',
+      address TEXT DEFAULT '',
+      city TEXT DEFAULT '',
+      governorate TEXT DEFAULT '',
+      country TEXT DEFAULT 'Egypt',
+      credit_limit REAL DEFAULT 0,
+      balance REAL DEFAULT 0,
+      payment_terms INTEGER DEFAULT 0,
+      notes TEXT DEFAULT '',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (company_id) REFERENCES companies(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS invoices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      invoice_number TEXT UNIQUE NOT NULL,
+      customer_id INTEGER,
+      company_id INTEGER,
+      type TEXT DEFAULT 'invoice',
+      status TEXT DEFAULT 'draft',
+      date TEXT DEFAULT (date('now')),
+      due_date TEXT DEFAULT '',
+      subtotal REAL DEFAULT 0,
+      discount_amount REAL DEFAULT 0,
+      discount_percent REAL DEFAULT 0,
+      tax_amount REAL DEFAULT 0,
+      tax_percent REAL DEFAULT 14,
+      shipping_cost REAL DEFAULT 0,
+      total REAL DEFAULT 0,
+      amount_paid REAL DEFAULT 0,
+      balance_due REAL DEFAULT 0,
+      currency TEXT DEFAULT 'EGP',
+      payment_terms TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      terms TEXT DEFAULT '',
+      internal_notes TEXT DEFAULT '',
+      reference TEXT DEFAULT '',
+      parent_invoice_id INTEGER,
+      created_by TEXT DEFAULT 'admin',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (customer_id) REFERENCES customers_erp(id),
+      FOREIGN KEY (company_id) REFERENCES companies(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS invoice_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      invoice_id INTEGER NOT NULL,
+      product_id INTEGER,
+      product_name TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      quantity REAL DEFAULT 1,
+      unit_price REAL DEFAULT 0,
+      discount_percent REAL DEFAULT 0,
+      tax_percent REAL DEFAULT 14,
+      total REAL DEFAULT 0,
+      sort_order INTEGER DEFAULT 0,
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS estimates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      estimate_number TEXT UNIQUE NOT NULL,
+      customer_id INTEGER,
+      company_id INTEGER,
+      status TEXT DEFAULT 'draft',
+      date TEXT DEFAULT (date('now')),
+      expiry_date TEXT DEFAULT '',
+      subtotal REAL DEFAULT 0,
+      discount_amount REAL DEFAULT 0,
+      discount_percent REAL DEFAULT 0,
+      tax_amount REAL DEFAULT 0,
+      tax_percent REAL DEFAULT 14,
+      shipping_cost REAL DEFAULT 0,
+      total REAL DEFAULT 0,
+      currency TEXT DEFAULT 'EGP',
+      notes TEXT DEFAULT '',
+      terms TEXT DEFAULT '',
+      converted_invoice_id INTEGER,
+      created_by TEXT DEFAULT 'admin',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (customer_id) REFERENCES customers_erp(id),
+      FOREIGN KEY (company_id) REFERENCES companies(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS estimate_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      estimate_id INTEGER NOT NULL,
+      product_id INTEGER,
+      product_name TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      quantity REAL DEFAULT 1,
+      unit_price REAL DEFAULT 0,
+      discount_percent REAL DEFAULT 0,
+      tax_percent REAL DEFAULT 14,
+      total REAL DEFAULT 0,
+      sort_order INTEGER DEFAULT 0,
+      FOREIGN KEY (estimate_id) REFERENCES estimates(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS credit_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      credit_number TEXT UNIQUE NOT NULL,
+      customer_id INTEGER,
+      invoice_id INTEGER,
+      type TEXT DEFAULT 'credit_note',
+      status TEXT DEFAULT 'draft',
+      date TEXT DEFAULT (date('now')),
+      subtotal REAL DEFAULT 0,
+      tax_amount REAL DEFAULT 0,
+      tax_percent REAL DEFAULT 14,
+      total REAL DEFAULT 0,
+      reason TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      applied_to_invoice INTEGER,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (customer_id) REFERENCES customers_erp(id),
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS credit_note_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      credit_note_id INTEGER NOT NULL,
+      product_id INTEGER,
+      product_name TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      quantity REAL DEFAULT 1,
+      unit_price REAL DEFAULT 0,
+      tax_percent REAL DEFAULT 14,
+      total REAL DEFAULT 0,
+      FOREIGN KEY (credit_note_id) REFERENCES credit_notes(id) ON DELETE CASCADE
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      payment_number TEXT UNIQUE NOT NULL,
+      customer_id INTEGER,
+      invoice_id INTEGER,
+      credit_note_id INTEGER,
+      amount REAL DEFAULT 0,
+      payment_method TEXT DEFAULT 'cash',
+      payment_date TEXT DEFAULT (date('now')),
+      reference TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      bank_name TEXT DEFAULT '',
+      cheque_number TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (customer_id) REFERENCES customers_erp(id),
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+    );
+  `);
+
+  runSql(`
+    CREATE TABLE IF NOT EXISTS recurring_invoices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT DEFAULT '',
+      customer_id INTEGER,
+      frequency TEXT DEFAULT 'monthly',
+      start_date TEXT DEFAULT (date('now')),
+      next_date TEXT DEFAULT '',
+      end_date TEXT DEFAULT '',
+      template_json TEXT DEFAULT '{}',
+      is_active INTEGER DEFAULT 1,
+      last_generated TEXT DEFAULT '',
+      generated_count INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (customer_id) REFERENCES customers_erp(id)
+    );
+  `);
+
+  // ─── Indexes ─────────────────────────────────────────────────────────────
+  const indexes = [
+    'CREATE INDEX IF NOT EXISTS idx_orders_source ON orders(source)',
+    'CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)',
+    'CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(order_date)',
+    'CREATE INDEX IF NOT EXISTS idx_orders_channel ON orders(channel)',
+    'CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(customer_phone)',
+    'CREATE INDEX IF NOT EXISTS idx_orders_source_id ON orders(source, source_order_id)',
+    'CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku)',
+    'CREATE INDEX IF NOT EXISTS idx_products_source ON products(source)',
+    'CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)',
+    'CREATE INDEX IF NOT EXISTS idx_sync_logs_source ON sync_logs(source)',
+    'CREATE INDEX IF NOT EXISTS idx_sync_logs_date ON sync_logs(started_at)',
+    'CREATE INDEX IF NOT EXISTS idx_inventory_sku ON inventory(sku)',
+    'CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date)',
+    'CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)',
+    'CREATE INDEX IF NOT EXISTS idx_invoices_customer ON invoices(customer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)',
+    'CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(date)',
+    'CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number)',
+    'CREATE INDEX IF NOT EXISTS idx_estimates_customer ON estimates(customer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_estimates_status ON estimates(status)',
+    'CREATE INDEX IF NOT EXISTS idx_payments_customer ON payments(customer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id)',
+    'CREATE INDEX IF NOT EXISTS idx_credit_notes_customer ON credit_notes(customer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_customers_erp_phone ON customers_erp(phone)',
+    'CREATE INDEX IF NOT EXISTS idx_customers_erp_company ON customers_erp(company_id)',
+  ];
+  for (const idx of indexes) {
+    try { runSql(idx); } catch (_) {}
+  }
+
   // Insert default admin PIN if none exists
   const authCount = execCount('SELECT COUNT(*) FROM auth');
   if (authCount === 0) {
@@ -1152,4 +1406,631 @@ export function seedDemoExpenses() {
 
   saveDb();
   return { seeded, message: `Seeded ${seeded} demo expenses` };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ERP FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Companies ──────────────────────────────────────────────────────────────
+
+export function getCompanies(filters = {}) {
+  let where = '1=1';
+  const params = [];
+  if (filters.search) { where += ' AND (name LIKE ? OR name_ar LIKE ? OR phone LIKE ?)'; const s = `%${filters.search}%`; params.push(s, s, s); }
+  if (filters.is_active !== undefined) { where += ' AND is_active = ?'; params.push(filters.is_active); }
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(500, parseInt(filters.limit) || 50);
+  const offset = (page - 1) * limit;
+  const total = execCount(`SELECT COUNT(*) FROM companies WHERE ${where}`, params);
+  const companies = queryAll(`SELECT * FROM companies WHERE ${where} ORDER BY name ASC LIMIT ? OFFSET ?`, [...params, limit, offset]);
+  return { companies, total, page, limit };
+}
+
+export function getCompanyById(id) {
+  return queryOne('SELECT * FROM companies WHERE id = ?', [parseInt(id)]);
+}
+
+export function createCompany(data) {
+  runSql(`INSERT INTO companies (name, name_ar, tax_number, commercial_register, address, city, governorate, phone, email, website, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [data.name, data.name_ar || '', data.tax_number || '', data.commercial_register || '', data.address || '',
+     data.city || '', data.governorate || '', data.phone || '', data.email || '', data.website || '', data.notes || '']);
+  const row = queryOne('SELECT last_insert_rowid() as id');
+  saveDb();
+  return row?.id;
+}
+
+export function updateCompany(id, data) {
+  const fields = [];
+  const params = [];
+  for (const [k, v] of Object.entries(data)) {
+    if (['name','name_ar','tax_number','commercial_register','address','city','governorate','phone','email','website','notes','is_active'].includes(k)) {
+      fields.push(`${k} = ?`); params.push(v);
+    }
+  }
+  if (fields.length === 0) return false;
+  fields.push("updated_at = datetime('now')");
+  params.push(parseInt(id));
+  runSql(`UPDATE companies SET ${fields.join(', ')} WHERE id = ?`, params);
+  saveDb();
+  return true;
+}
+
+export function deleteCompany(id) {
+  runSql('DELETE FROM companies WHERE id = ?', [parseInt(id)]);
+  saveDb();
+  return true;
+}
+
+// ─── ERP Customers ──────────────────────────────────────────────────────────
+
+export function getCustomersERP(filters = {}) {
+  let where = '1=1';
+  const params = [];
+  if (filters.search) { where += ' AND (c.name LIKE ? OR c.name_ar LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)'; const s = `%${filters.search}%`; params.push(s, s, s, s); }
+  if (filters.company_id) { where += ' AND c.company_id = ?'; params.push(parseInt(filters.company_id)); }
+  if (filters.type) { where += ' AND c.type = ?'; params.push(filters.type); }
+  if (filters.is_active !== undefined) { where += ' AND c.is_active = ?'; params.push(filters.is_active); }
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(500, parseInt(filters.limit) || 50);
+  const offset = (page - 1) * limit;
+  const total = execCount(`SELECT COUNT(*) FROM customers_erp c WHERE ${where}`, params);
+  const customers = queryAll(`
+    SELECT c.*, comp.name as company_name,
+      (SELECT COUNT(*) FROM invoices WHERE customer_id = c.id) as invoice_count,
+      (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE customer_id = c.id AND status != 'cancelled') as total_invoiced,
+      (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE customer_id = c.id) as total_paid,
+      (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE customer_id = c.id AND status != 'cancelled') - (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE customer_id = c.id) as balance
+    FROM customers_erp c LEFT JOIN companies comp ON c.company_id = comp.id
+    WHERE ${where} ORDER BY c.name ASC LIMIT ? OFFSET ?
+  `, [...params, limit, offset]);
+  return { customers, total, page, limit };
+}
+
+export function getCustomerERPById(id) {
+  return queryOne(`
+    SELECT c.*, comp.name as company_name FROM customers_erp c
+    LEFT JOIN companies comp ON c.company_id = comp.id WHERE c.id = ?
+  `, [parseInt(id)]);
+}
+
+export function createCustomerERP(data) {
+  runSql(`INSERT INTO customers_erp (name, name_ar, company_id, type, tax_number, email, phone, phone2, address, city, governorate, country, credit_limit, payment_terms, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [data.name, data.name_ar || '', data.company_id || null, data.type || 'individual', data.tax_number || '',
+     data.email || '', data.phone || '', data.phone2 || '', data.address || '', data.city || '',
+     data.governorate || '', data.country || 'Egypt', data.credit_limit || 0, data.payment_terms || 0, data.notes || '']);
+  const row = queryOne('SELECT last_insert_rowid() as id');
+  saveDb();
+  return row?.id;
+}
+
+export function updateCustomerERP(id, data) {
+  const fields = [];
+  const params = [];
+  const allowed = ['name','name_ar','company_id','type','tax_number','email','phone','phone2','address','city','governorate','country','credit_limit','payment_terms','notes','is_active'];
+  for (const [k, v] of Object.entries(data)) {
+    if (allowed.includes(k)) { fields.push(`${k} = ?`); params.push(v); }
+  }
+  if (fields.length === 0) return false;
+  fields.push("updated_at = datetime('now')");
+  params.push(parseInt(id));
+  runSql(`UPDATE customers_erp SET ${fields.join(', ')} WHERE id = ?`, params);
+  saveDb();
+  return true;
+}
+
+export function deleteCustomerERP(id) {
+  runSql('DELETE FROM customers_erp WHERE id = ?', [parseInt(id)]);
+  saveDb();
+  return true;
+}
+
+// ─── Invoices ───────────────────────────────────────────────────────────────
+
+export function getNextInvoiceNumber() {
+  const row = queryOne("SELECT invoice_number FROM invoices ORDER BY id DESC LIMIT 1");
+  if (!row || !row.invoice_number) return 'INV-0001';
+  const num = parseInt(row.invoice_number.replace('INV-', '')) || 0;
+  return `INV-${String(num + 1).padStart(4, '0')}`;
+}
+
+export function getInvoices(filters = {}) {
+  let where = '1=1';
+  const params = [];
+  if (filters.customer_id) { where += ' AND i.customer_id = ?'; params.push(parseInt(filters.customer_id)); }
+  if (filters.status) { where += ' AND i.status = ?'; params.push(filters.status); }
+  if (filters.type) { where += ' AND i.type = ?'; params.push(filters.type); }
+  if (filters.dateFrom) { where += ' AND i.date >= ?'; params.push(filters.dateFrom); }
+  if (filters.dateTo) { where += ' AND i.date <= ?'; params.push(filters.dateTo); }
+  if (filters.search) { where += ' AND (i.invoice_number LIKE ? OR i.reference LIKE ? OR c.name LIKE ?)'; const s = `%${filters.search}%`; params.push(s, s, s); }
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(500, parseInt(filters.limit) || 50);
+  const offset = (page - 1) * limit;
+  const total = execCount(`SELECT COUNT(*) FROM invoices i LEFT JOIN customers_erp c ON i.customer_id = c.id WHERE ${where}`, params);
+  const invoices = queryAll(`
+    SELECT i.*, c.name as customer_name, c.phone as customer_phone, c.email as customer_email, comp.name as company_name
+    FROM invoices i LEFT JOIN customers_erp c ON i.customer_id = c.id LEFT JOIN companies comp ON i.company_id = comp.id
+    WHERE ${where} ORDER BY i.date DESC, i.id DESC LIMIT ? OFFSET ?
+  `, [...params, limit, offset]);
+  return { invoices, total, page, limit };
+}
+
+export function getInvoiceById(id) {
+  const invoice = queryOne(`
+    SELECT i.*, c.name as customer_name, c.phone as customer_phone, c.email as customer_email,
+      c.address as customer_address, c.city as customer_city, c.governorate as customer_governorate,
+      c.tax_number as customer_tax_number, comp.name as company_name
+    FROM invoices i LEFT JOIN customers_erp c ON i.customer_id = c.id LEFT JOIN companies comp ON i.company_id = comp.id
+    WHERE i.id = ?
+  `, [parseInt(id)]);
+  if (!invoice) return null;
+  invoice.items = queryAll('SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order', [parseInt(id)]);
+  invoice.payments = queryAll('SELECT * FROM payments WHERE invoice_id = ? ORDER BY payment_date', [parseInt(id)]);
+  return invoice;
+}
+
+export function createInvoice(data) {
+  const invoiceNumber = data.invoice_number || getNextInvoiceNumber();
+  runSql(`INSERT INTO invoices (invoice_number, customer_id, company_id, type, status, date, due_date, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, shipping_cost, total, amount_paid, balance_due, currency, payment_terms, notes, terms, internal_notes, reference, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [invoiceNumber, data.customer_id || null, data.company_id || null, data.type || 'invoice', data.status || 'draft',
+     data.date || new Date().toISOString().slice(0, 10), data.due_date || '', data.subtotal || 0,
+     data.discount_amount || 0, data.discount_percent || 0, data.tax_amount || 0, data.tax_percent || 14,
+     data.shipping_cost || 0, data.total || 0, data.amount_paid || 0, data.balance_due || data.total || 0,
+     data.currency || 'EGP', data.payment_terms || '', data.notes || '', data.terms || '',
+     data.internal_notes || '', data.reference || '', data.created_by || 'admin']);
+  const row = queryOne('SELECT last_insert_rowid() as id');
+  const invoiceId = row?.id;
+
+  if (data.items && data.items.length > 0) {
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i];
+      runSql(`INSERT INTO invoice_items (invoice_id, product_id, product_name, description, quantity, unit_price, discount_percent, tax_percent, total, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [invoiceId, item.product_id || null, item.product_name || '', item.description || '',
+         item.quantity || 1, item.unit_price || 0, item.discount_percent || 0, item.tax_percent || 14,
+         item.total || (item.quantity || 1) * (item.unit_price || 0), i]);
+    }
+  }
+  saveDb();
+  return invoiceId;
+}
+
+export function updateInvoice(id, data) {
+  const fields = [];
+  const params = [];
+  const allowed = ['customer_id','company_id','status','date','due_date','subtotal','discount_amount','discount_percent','tax_amount','tax_percent','shipping_cost','total','amount_paid','balance_due','payment_terms','notes','terms','internal_notes','reference'];
+  for (const [k, v] of Object.entries(data)) {
+    if (allowed.includes(k)) { fields.push(`${k} = ?`); params.push(v); }
+  }
+  if (fields.length > 0) {
+    fields.push("updated_at = datetime('now')");
+    params.push(parseInt(id));
+    runSql(`UPDATE invoices SET ${fields.join(', ')} WHERE id = ?`, params);
+  }
+  if (data.items) {
+    runSql('DELETE FROM invoice_items WHERE invoice_id = ?', [parseInt(id)]);
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i];
+      runSql(`INSERT INTO invoice_items (invoice_id, product_id, product_name, description, quantity, unit_price, discount_percent, tax_percent, total, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, item.product_id || null, item.product_name || '', item.description || '',
+         item.quantity || 1, item.unit_price || 0, item.discount_percent || 0, item.tax_percent || 14,
+         item.total || 0, i]);
+    }
+  }
+  saveDb();
+  return true;
+}
+
+export function deleteInvoice(id) {
+  runSql('DELETE FROM invoice_items WHERE invoice_id = ?', [parseInt(id)]);
+  runSql('DELETE FROM payments WHERE invoice_id = ?', [parseInt(id)]);
+  runSql('DELETE FROM invoices WHERE id = ?', [parseInt(id)]);
+  saveDb();
+  return true;
+}
+
+// ─── Estimates ──────────────────────────────────────────────────────────────
+
+export function getNextEstimateNumber() {
+  const row = queryOne("SELECT estimate_number FROM estimates ORDER BY id DESC LIMIT 1");
+  if (!row || !row.estimate_number) return 'EST-0001';
+  const num = parseInt(row.estimate_number.replace('EST-', '')) || 0;
+  return `EST-${String(num + 1).padStart(4, '0')}`;
+}
+
+export function getEstimates(filters = {}) {
+  let where = '1=1';
+  const params = [];
+  if (filters.customer_id) { where += ' AND e.customer_id = ?'; params.push(parseInt(filters.customer_id)); }
+  if (filters.status) { where += ' AND e.status = ?'; params.push(filters.status); }
+  if (filters.search) { where += ' AND (e.estimate_number LIKE ? OR c.name LIKE ?)'; const s = `%${filters.search}%`; params.push(s, s); }
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(500, parseInt(filters.limit) || 50);
+  const offset = (page - 1) * limit;
+  const total = execCount(`SELECT COUNT(*) FROM estimates e LEFT JOIN customers_erp c ON e.customer_id = c.id WHERE ${where}`, params);
+  const estimates = queryAll(`
+    SELECT e.*, c.name as customer_name, c.phone as customer_phone, comp.name as company_name
+    FROM estimates e LEFT JOIN customers_erp c ON e.customer_id = c.id LEFT JOIN companies comp ON e.company_id = comp.id
+    WHERE ${where} ORDER BY e.date DESC, e.id DESC LIMIT ? OFFSET ?
+  `, [...params, limit, offset]);
+  return { estimates, total, page, limit };
+}
+
+export function getEstimateById(id) {
+  const est = queryOne(`
+    SELECT e.*, c.name as customer_name, c.phone as customer_phone, c.email as customer_email,
+      c.address as customer_address, comp.name as company_name
+    FROM estimates e LEFT JOIN customers_erp c ON e.customer_id = c.id LEFT JOIN companies comp ON e.company_id = comp.id
+    WHERE e.id = ?
+  `, [parseInt(id)]);
+  if (!est) return null;
+  est.items = queryAll('SELECT * FROM estimate_items WHERE estimate_id = ? ORDER BY sort_order', [parseInt(id)]);
+  return est;
+}
+
+export function createEstimate(data) {
+  const estimateNumber = data.estimate_number || getNextEstimateNumber();
+  runSql(`INSERT INTO estimates (estimate_number, customer_id, company_id, status, date, expiry_date, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, shipping_cost, total, currency, notes, terms, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [estimateNumber, data.customer_id || null, data.company_id || null, data.status || 'draft',
+     data.date || new Date().toISOString().slice(0, 10), data.expiry_date || '', data.subtotal || 0,
+     data.discount_amount || 0, data.discount_percent || 0, data.tax_amount || 0, data.tax_percent || 14,
+     data.shipping_cost || 0, data.total || 0, data.currency || 'EGP', data.notes || '', data.terms || '',
+     data.created_by || 'admin']);
+  const row = queryOne('SELECT last_insert_rowid() as id');
+  const estId = row?.id;
+  if (data.items && data.items.length > 0) {
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i];
+      runSql(`INSERT INTO estimate_items (estimate_id, product_id, product_name, description, quantity, unit_price, discount_percent, tax_percent, total, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [estId, item.product_id || null, item.product_name || '', item.description || '',
+         item.quantity || 1, item.unit_price || 0, item.discount_percent || 0, item.tax_percent || 14,
+         item.total || 0, i]);
+    }
+  }
+  saveDb();
+  return estId;
+}
+
+export function updateEstimate(id, data) {
+  const fields = [];
+  const params = [];
+  const allowed = ['customer_id','company_id','status','date','expiry_date','subtotal','discount_amount','discount_percent','tax_amount','tax_percent','shipping_cost','total','notes','terms','converted_invoice_id'];
+  for (const [k, v] of Object.entries(data)) {
+    if (allowed.includes(k)) { fields.push(`${k} = ?`); params.push(v); }
+  }
+  if (fields.length > 0) { fields.push("updated_at = datetime('now')"); params.push(parseInt(id)); runSql(`UPDATE estimates SET ${fields.join(', ')} WHERE id = ?`, params); }
+  if (data.items) {
+    runSql('DELETE FROM estimate_items WHERE estimate_id = ?', [parseInt(id)]);
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i];
+      runSql(`INSERT INTO estimate_items (estimate_id, product_id, product_name, description, quantity, unit_price, discount_percent, tax_percent, total, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, item.product_id || null, item.product_name || '', item.description || '',
+         item.quantity || 1, item.unit_price || 0, item.discount_percent || 0, item.tax_percent || 14,
+         item.total || 0, i]);
+    }
+  }
+  saveDb();
+  return true;
+}
+
+export function deleteEstimate(id) {
+  runSql('DELETE FROM estimate_items WHERE estimate_id = ?', [parseInt(id)]);
+  runSql('DELETE FROM estimates WHERE id = ?', [parseInt(id)]);
+  saveDb();
+  return true;
+}
+
+export function convertEstimateToInvoice(estimateId) {
+  const est = getEstimateById(estimateId);
+  if (!est) return null;
+  const invoiceId = createInvoice({
+    customer_id: est.customer_id, company_id: est.company_id, type: 'invoice', status: 'sent',
+    date: est.date, subtotal: est.subtotal, discount_amount: est.discount_amount,
+    discount_percent: est.discount_percent, tax_amount: est.tax_amount, tax_percent: est.tax_percent,
+    shipping_cost: est.shipping_cost, total: est.total, balance_due: est.total,
+    notes: est.notes, terms: est.terms, reference: est.estimate_number,
+    items: est.items.map(it => ({ ...it, invoice_id: undefined })),
+  });
+  updateEstimate(estimateId, { status: 'converted', converted_invoice_id: invoiceId });
+  return invoiceId;
+}
+
+// ─── Credit Notes ───────────────────────────────────────────────────────────
+
+export function getNextCreditNumber() {
+  const row = queryOne("SELECT credit_number FROM credit_notes ORDER BY id DESC LIMIT 1");
+  if (!row || !row.credit_number) return 'CN-0001';
+  const num = parseInt(row.credit_number.replace('CN-', '')) || 0;
+  return `CN-${String(num + 1).padStart(4, '0')}`;
+}
+
+export function getCreditNotes(filters = {}) {
+  let where = '1=1';
+  const params = [];
+  if (filters.customer_id) { where += ' AND cn.customer_id = ?'; params.push(parseInt(filters.customer_id)); }
+  if (filters.status) { where += ' AND cn.status = ?'; params.push(filters.status); }
+  if (filters.search) { where += ' AND (cn.credit_number LIKE ? OR c.name LIKE ?)'; const s = `%${filters.search}%`; params.push(s, s); }
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(500, parseInt(filters.limit) || 50);
+  const offset = (page - 1) * limit;
+  const total = execCount(`SELECT COUNT(*) FROM credit_notes cn LEFT JOIN customers_erp c ON cn.customer_id = c.id WHERE ${where}`, params);
+  const notes = queryAll(`
+    SELECT cn.*, c.name as customer_name FROM credit_notes cn LEFT JOIN customers_erp c ON cn.customer_id = c.id
+    WHERE ${where} ORDER BY cn.date DESC LIMIT ? OFFSET ?
+  `, [...params, limit, offset]);
+  return { credit_notes: notes, total, page, limit };
+}
+
+export function getCreditNoteById(id) {
+  const cn = queryOne('SELECT cn.*, c.name as customer_name FROM credit_notes cn LEFT JOIN customers_erp c ON cn.customer_id = c.id WHERE cn.id = ?', [parseInt(id)]);
+  if (!cn) return null;
+  cn.items = queryAll('SELECT * FROM credit_note_items WHERE credit_note_id = ?', [parseInt(id)]);
+  return cn;
+}
+
+export function createCreditNote(data) {
+  const creditNumber = data.credit_number || getNextCreditNumber();
+  runSql(`INSERT INTO credit_notes (credit_number, customer_id, invoice_id, type, status, date, subtotal, tax_amount, tax_percent, total, reason, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [creditNumber, data.customer_id || null, data.invoice_id || null, data.type || 'credit_note',
+     data.status || 'draft', data.date || new Date().toISOString().slice(0, 10),
+     data.subtotal || 0, data.tax_amount || 0, data.tax_percent || 14, data.total || 0,
+     data.reason || '', data.notes || '']);
+  const row = queryOne('SELECT last_insert_rowid() as id');
+  const cnId = row?.id;
+  if (data.items && data.items.length > 0) {
+    for (const item of data.items) {
+      runSql(`INSERT INTO credit_note_items (credit_note_id, product_id, product_name, description, quantity, unit_price, tax_percent, total)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [cnId, item.product_id || null, item.product_name || '', item.description || '',
+         item.quantity || 1, item.unit_price || 0, item.tax_percent || 14, item.total || 0]);
+    }
+  }
+  saveDb();
+  return cnId;
+}
+
+export function deleteCreditNote(id) {
+  runSql('DELETE FROM credit_note_items WHERE credit_note_id = ?', [parseInt(id)]);
+  runSql('DELETE FROM credit_notes WHERE id = ?', [parseInt(id)]);
+  saveDb();
+  return true;
+}
+
+// ─── Payments ───────────────────────────────────────────────────────────────
+
+export function getNextPaymentNumber() {
+  const row = queryOne("SELECT payment_number FROM payments ORDER BY id DESC LIMIT 1");
+  if (!row || !row.payment_number) return 'PAY-0001';
+  const num = parseInt(row.payment_number.replace('PAY-', '')) || 0;
+  return `PAY-${String(num + 1).padStart(4, '0')}`;
+}
+
+export function getPayments(filters = {}) {
+  let where = '1=1';
+  const params = [];
+  if (filters.customer_id) { where += ' AND p.customer_id = ?'; params.push(parseInt(filters.customer_id)); }
+  if (filters.invoice_id) { where += ' AND p.invoice_id = ?'; params.push(parseInt(filters.invoice_id)); }
+  if (filters.payment_method) { where += ' AND p.payment_method = ?'; params.push(filters.payment_method); }
+  if (filters.dateFrom) { where += ' AND p.payment_date >= ?'; params.push(filters.dateFrom); }
+  if (filters.dateTo) { where += ' AND p.payment_date <= ?'; params.push(filters.dateTo); }
+  if (filters.search) { where += ' AND (p.payment_number LIKE ? OR c.name LIKE ? OR p.reference LIKE ?)'; const s = `%${filters.search}%`; params.push(s, s, s); }
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(500, parseInt(filters.limit) || 50);
+  const offset = (page - 1) * limit;
+  const total = execCount(`SELECT COUNT(*) FROM payments p LEFT JOIN customers_erp c ON p.customer_id = c.id WHERE ${where}`, params);
+  const payments = queryAll(`
+    SELECT p.*, c.name as customer_name, i.invoice_number
+    FROM payments p LEFT JOIN customers_erp c ON p.customer_id = c.id LEFT JOIN invoices i ON p.invoice_id = i.id
+    WHERE ${where} ORDER BY p.payment_date DESC LIMIT ? OFFSET ?
+  `, [...params, limit, offset]);
+  return { payments, total, page, limit };
+}
+
+export function createPayment(data) {
+  const paymentNumber = data.payment_number || getNextPaymentNumber();
+  runSql(`INSERT INTO payments (payment_number, customer_id, invoice_id, credit_note_id, amount, payment_method, payment_date, reference, notes, bank_name, cheque_number)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [paymentNumber, data.customer_id || null, data.invoice_id || null, data.credit_note_id || null,
+     data.amount || 0, data.payment_method || 'cash', data.payment_date || new Date().toISOString().slice(0, 10),
+     data.reference || '', data.notes || '', data.bank_name || '', data.cheque_number || '']);
+
+  if (data.invoice_id && data.amount) {
+    const inv = getInvoiceById(data.invoice_id);
+    if (inv) {
+      const newPaid = (inv.amount_paid || 0) + (data.amount || 0);
+      const newBalance = (inv.total || 0) - newPaid;
+      const newStatus = newBalance <= 0 ? 'paid' : newPaid > 0 ? 'partial' : inv.status;
+      runSql('UPDATE invoices SET amount_paid = ?, balance_due = ?, status = ? WHERE id = ?', [newPaid, Math.max(0, newBalance), newStatus, parseInt(data.invoice_id)]);
+    }
+  }
+  saveDb();
+  const row = queryOne('SELECT last_insert_rowid() as id');
+  return row?.id;
+}
+
+export function deletePayment(id) {
+  const payment = queryOne('SELECT * FROM payments WHERE id = ?', [parseInt(id)]);
+  if (payment && payment.invoice_id) {
+    const inv = getInvoiceById(payment.invoice_id);
+    if (inv) {
+      const newPaid = Math.max(0, (inv.amount_paid || 0) - (payment.amount || 0));
+      const newBalance = (inv.total || 0) - newPaid;
+      runSql('UPDATE invoices SET amount_paid = ?, balance_due = ?, status = ? WHERE id = ?', [newPaid, Math.max(0, newBalance), newBalance <= 0 ? 'paid' : 'sent', parseInt(payment.invoice_id)]);
+    }
+  }
+  runSql('DELETE FROM payments WHERE id = ?', [parseInt(id)]);
+  saveDb();
+  return true;
+}
+
+// ─── Recurring Invoices ─────────────────────────────────────────────────────
+
+export function getRecurringInvoices(filters = {}) {
+  let where = '1=1';
+  const params = [];
+  if (filters.is_active !== undefined) { where += ' AND r.is_active = ?'; params.push(filters.is_active); }
+  return queryAll(`SELECT r.*, c.name as customer_name FROM recurring_invoices r LEFT JOIN customers_erp c ON r.customer_id = c.id WHERE ${where} ORDER BY r.next_date`, params);
+}
+
+export function createRecurringInvoice(data) {
+  runSql(`INSERT INTO recurring_invoices (name, customer_id, frequency, start_date, next_date, end_date, template_json, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [data.name || '', data.customer_id || null, data.frequency || 'monthly',
+     data.start_date || new Date().toISOString().slice(0, 10), data.next_date || '',
+     data.end_date || '', JSON.stringify(data.template || {}), data.is_active !== false ? 1 : 0]);
+  const row = queryOne('SELECT last_insert_rowid() as id');
+  saveDb();
+  return row?.id;
+}
+
+export function updateRecurringInvoice(id, data) {
+  const fields = [];
+  const params = [];
+  for (const [k, v] of Object.entries(data)) {
+    if (['name','customer_id','frequency','start_date','next_date','end_date','is_active','template_json','last_generated','generated_count'].includes(k)) {
+      fields.push(`${k} = ?`); params.push(k === 'template_json' ? JSON.stringify(v) : v);
+    }
+  }
+  if (fields.length === 0) return false;
+  params.push(parseInt(id));
+  runSql(`UPDATE recurring_invoices SET ${fields.join(', ')} WHERE id = ?`, params);
+  saveDb();
+  return true;
+}
+
+export function deleteRecurringInvoice(id) {
+  runSql('DELETE FROM recurring_invoices WHERE id = ?', [parseInt(id)]);
+  saveDb();
+  return true;
+}
+
+// ─── ERP Products (enhanced) ───────────────────────────────────────────────
+
+export function getProductsERP(filters = {}) {
+  let where = '1=1';
+  const params = [];
+  if (filters.search) { where += ' AND (name LIKE ? OR sku LIKE ? OR category LIKE ?)'; const s = `%${filters.search}%`; params.push(s, s, s); }
+  if (filters.source) { where += ' AND source = ?'; params.push(filters.source); }
+  if (filters.category) { where += ' AND category = ?'; params.push(filters.category); }
+  if (filters.mirror_type) { where += ' AND mirror_type = ?'; params.push(filters.mirror_type); }
+  if (filters.is_active !== undefined) { where += ' AND is_active = ?'; params.push(filters.is_active); }
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(500, parseInt(filters.limit) || 50);
+  const offset = (page - 1) * limit;
+  const total = execCount(`SELECT COUNT(*) FROM products WHERE ${where}`, params);
+  const products = queryAll(`SELECT * FROM products WHERE ${where} ORDER BY name ASC LIMIT ? OFFSET ?`, [...params, limit, offset]);
+  return { products, total, page, limit };
+}
+
+export function updateProductERP(id, data) {
+  const fields = [];
+  const params = [];
+  const allowed = ['name','name_ar','sku','barcode','category','category_ar','subcategory','mirror_type','mirror_shape','mirror_color','price','cost','weight','dimensions','description','description_ar','image_url','images','is_active'];
+  for (const [k, v] of Object.entries(data)) {
+    if (allowed.includes(k)) { fields.push(`${k} = ?`); params.push(typeof v === 'object' ? JSON.stringify(v) : v); }
+  }
+  if (fields.length === 0) return false;
+  params.push(parseInt(id));
+  runSql(`UPDATE products SET ${fields.join(', ')} WHERE id = ?`, params);
+  saveDb();
+  return true;
+}
+
+export function createProductERP(data) {
+  runSql(`INSERT INTO products (name, name_ar, sku, barcode, source, category, category_ar, subcategory, mirror_type, mirror_shape, mirror_color, price, cost, weight, dimensions, description, description_ar, image_url, images, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [data.name || '', data.name_ar || '', data.sku || '', data.barcode || '', data.source || 'manual',
+     data.category || '', data.category_ar || '', data.subcategory || '', data.mirror_type || '',
+     data.mirror_shape || '', data.mirror_color || '', data.price || 0, data.cost || 0,
+     data.weight || '', data.dimensions || '', data.description || '', data.description_ar || '',
+     data.image_url || '', JSON.stringify(data.images || []), data.is_active !== false ? 1 : 0]);
+  const row = queryOne('SELECT last_insert_rowid() as id');
+  saveDb();
+  return row?.id;
+}
+
+export function deleteProductERP(id) {
+  runSql('DELETE FROM products WHERE id = ?', [parseInt(id)]);
+  saveDb();
+  return true;
+}
+
+// ─── Enhanced Inventory ─────────────────────────────────────────────────────
+
+export function getInventoryFiltered(filters = {}) {
+  let where = '1=1';
+  const params = [];
+  if (filters.search) { where += ' AND (i.name LIKE ? OR i.sku LIKE ?)'; const s = `%${filters.search}%`; params.push(s, s); }
+  if (filters.low_stock) { where += ' AND i.stock_quantity <= i.low_stock_threshold'; }
+  if (filters.source) { where += ' AND p.source = ?'; params.push(filters.source); }
+  if (filters.category) { where += ' AND p.category = ?'; params.push(filters.category); }
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(500, parseInt(filters.limit) || 50);
+  const offset = (page - 1) * limit;
+  const total = execCount(`SELECT COUNT(*) FROM inventory i LEFT JOIN products p ON i.sku = p.sku WHERE ${where}`, params);
+  const items = queryAll(`
+    SELECT i.*, p.source, p.category, p.mirror_type, p.image_url, p.price as retail_price
+    FROM inventory i LEFT JOIN products p ON i.sku = p.sku
+    WHERE ${where} ORDER BY i.name ASC LIMIT ? OFFSET ?
+  `, [...params, limit, offset]);
+  return { items, total, page, limit };
+}
+
+// ─── Sales Summary ──────────────────────────────────────────────────────────
+
+export function getSalesSummary(filters = {}) {
+  let dateWhere = '1=1';
+  const params = [];
+  if (filters.dateFrom) { dateWhere += ' AND date >= ?'; params.push(filters.dateFrom); }
+  if (filters.dateTo) { dateWhere += ' AND date <= ?'; params.push(filters.dateTo); }
+
+  const invoiceStats = queryOne(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total, COALESCE(SUM(amount_paid), 0) as paid, COALESCE(SUM(balance_due), 0) as outstanding
+    FROM invoices WHERE ${dateWhere} AND status != 'cancelled'
+  `, params);
+
+  const estimateStats = queryOne(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+    FROM estimates WHERE ${dateWhere} AND status != 'cancelled'
+  `, params);
+
+  const paymentStats = queryOne(`
+    SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total
+    FROM payments WHERE ${dateWhere}
+  `, params);
+
+  const creditStats = queryOne(`
+    SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total
+    FROM credit_notes WHERE ${dateWhere} AND status != 'cancelled'
+  `, params);
+
+  const monthly = queryAll(`
+    SELECT strftime('%Y-%m', date) as month, SUM(total) as total, SUM(amount_paid) as paid, COUNT(*) as count
+    FROM invoices WHERE ${dateWhere} AND status != 'cancelled'
+    GROUP BY month ORDER BY month DESC LIMIT 12
+  `, params);
+
+  const topCustomers = queryAll(`
+    SELECT c.name, COUNT(i.id) as orders, SUM(i.total) as total
+    FROM invoices i JOIN customers_erp c ON i.customer_id = c.id
+    WHERE ${dateWhere} AND i.status != 'cancelled'
+    GROUP BY i.customer_id ORDER BY total DESC LIMIT 10
+  `, params);
+
+  return {
+    invoices: invoiceStats || { count: 0, total: 0, paid: 0, outstanding: 0 },
+    estimates: estimateStats || { count: 0, total: 0 },
+    payments: paymentStats || { count: 0, total: 0 },
+    creditNotes: creditStats || { count: 0, total: 0 },
+    monthly,
+    topCustomers,
+  };
 }

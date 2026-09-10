@@ -18,6 +18,14 @@ import orderStatusRouter from './routes/order-status.js';
 import rulesRouter from './routes/rules.js';
 import pnlRouter from './routes/pnl.js';
 import seedRouter from './routes/seed.js';
+import companiesRouter from './routes/companies.js';
+import customersErpRouter from './routes/customers-erp.js';
+import invoicesRouter from './routes/invoices.js';
+import estimatesRouter from './routes/estimates.js';
+import creditNotesRouter from './routes/credit-notes.js';
+import paymentsRouter from './routes/payments.js';
+import salesRouter from './routes/sales.js';
+import productsErpRouter from './routes/products-erp.js';
 import { startScheduler } from './services/scheduler.js';
 import { getDb, seedInventoryFromProducts, seedDemoExpenses } from './services/database.js';
 
@@ -44,6 +52,14 @@ app.use('/api/order-status', orderStatusRouter);
 app.use('/api/rules', rulesRouter);
 app.use('/api/pnl', pnlRouter);
 app.use('/api/seed', seedRouter);
+app.use('/api/erp/companies', companiesRouter);
+app.use('/api/erp/customers', customersErpRouter);
+app.use('/api/erp/invoices', invoicesRouter);
+app.use('/api/erp/estimates', estimatesRouter);
+app.use('/api/erp/credit-notes', creditNotesRouter);
+app.use('/api/erp/payments', paymentsRouter);
+app.use('/api/erp/sales', salesRouter);
+app.use('/api/erp/products', productsErpRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
