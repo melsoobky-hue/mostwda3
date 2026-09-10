@@ -180,6 +180,20 @@ function initSchema() {
     'CREATE INDEX IF NOT EXISTS idx_inventory_sku ON inventory(sku)',
     'CREATE INDEX IF NOT EXISTS idx_shipments_order ON shipments(order_id)',
     'CREATE INDEX IF NOT EXISTS idx_rules_type ON rules(type)',
+    'CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(customer_phone)',
+    'CREATE INDEX IF NOT EXISTS idx_invoices_customer ON invoices(customer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)',
+    'CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(date)',
+    'CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number)',
+    'CREATE INDEX IF NOT EXISTS idx_estimates_customer ON estimates(customer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_estimates_status ON estimates(status)',
+    'CREATE INDEX IF NOT EXISTS idx_payments_customer ON payments(customer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id)',
+    'CREATE INDEX IF NOT EXISTS idx_credit_notes_customer ON credit_notes(customer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_customers_erp_phone ON customers_erp(phone)',
+    'CREATE INDEX IF NOT EXISTS idx_customers_erp_company ON customers_erp(company_id)',
+    'CREATE INDEX IF NOT EXISTS idx_sync_logs_source ON sync_logs(source)',
+    'CREATE INDEX IF NOT EXISTS idx_sync_logs_date ON sync_logs(started_at)',
   ];
   for (const idx of indexes) {
     try { runSql(idx); } catch (_) {}
@@ -494,38 +508,6 @@ function initSchema() {
       FOREIGN KEY (customer_id) REFERENCES customers_erp(id)
     );
   `);
-
-  // ─── Indexes ─────────────────────────────────────────────────────────────
-  const indexes = [
-    'CREATE INDEX IF NOT EXISTS idx_orders_source ON orders(source)',
-    'CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)',
-    'CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(order_date)',
-    'CREATE INDEX IF NOT EXISTS idx_orders_channel ON orders(channel)',
-    'CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(customer_phone)',
-    'CREATE INDEX IF NOT EXISTS idx_orders_source_id ON orders(source, source_order_id)',
-    'CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku)',
-    'CREATE INDEX IF NOT EXISTS idx_products_source ON products(source)',
-    'CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)',
-    'CREATE INDEX IF NOT EXISTS idx_sync_logs_source ON sync_logs(source)',
-    'CREATE INDEX IF NOT EXISTS idx_sync_logs_date ON sync_logs(started_at)',
-    'CREATE INDEX IF NOT EXISTS idx_inventory_sku ON inventory(sku)',
-    'CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date)',
-    'CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)',
-    'CREATE INDEX IF NOT EXISTS idx_invoices_customer ON invoices(customer_id)',
-    'CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)',
-    'CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(date)',
-    'CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number)',
-    'CREATE INDEX IF NOT EXISTS idx_estimates_customer ON estimates(customer_id)',
-    'CREATE INDEX IF NOT EXISTS idx_estimates_status ON estimates(status)',
-    'CREATE INDEX IF NOT EXISTS idx_payments_customer ON payments(customer_id)',
-    'CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id)',
-    'CREATE INDEX IF NOT EXISTS idx_credit_notes_customer ON credit_notes(customer_id)',
-    'CREATE INDEX IF NOT EXISTS idx_customers_erp_phone ON customers_erp(phone)',
-    'CREATE INDEX IF NOT EXISTS idx_customers_erp_company ON customers_erp(company_id)',
-  ];
-  for (const idx of indexes) {
-    try { runSql(idx); } catch (_) {}
-  }
 
   // Insert default admin PIN if none exists
   const authCount = execCount('SELECT COUNT(*) FROM auth');
