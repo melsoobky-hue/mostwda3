@@ -1,0 +1,22 @@
+[
+  {
+    "name": "XSRF-TOKEN",
+    "value": "eyJpdiI6IlJJN3VBYUVDTmhUWE5Ud21pTWFFWGc9PSIsInZhbHVlIjoiYUFtc3A2MzdkdGc1Y0h2ZmRITFVGeFVsLzc1OVVMK1dtcWszQ1dkUUk3dTdKcDVnaE9hVlNRSGxMMmpLU3F0dEd5dU9UNys3RVhrN3VabmlEUTltMmNHMFZZOXdSTUtSSlhYOEhzcW9kVW9HdXZUdmg0UjVjdjZ0VldmZFlOWmUiLCJtYWMiOiJkZmIzNzg2YzljMTRmY2UxN2I5YmY5NGU1ZDAzYmY1ZTUzNTIyNmMwODkyZGRkM2UzZGI3ZjU2OTJjYTIwODc0IiwidGFnIjoiIn0%3D",
+    "domain": "new.vendorschichomz.com",
+    "path": "/",
+    "expires": 1789090835.415101,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "chichomz_session",
+    "value": "eyJpdiI6Imd3MG9xVm9TTWRZNnRqalJsU3lZS0E9PSIsInZhbHVlIjoickptSzVWNmgyem1oSE9oZUE1cTQ2eU80Tmh5dWJhTEFCM3pHcFdIc09TZ2t0UTBEYm1SbEdyYXRVem1jOEJzc1N0S3JHRG1Za2RFcGJlUXlzMHFzUXI5OVJwU2RPVmdOTGM0ZHNUenR2RlZuYXVHT2hNMTRMS2lLRlJ2em40ZEYiLCJtYWMiOiI4OGZhN2M0NGE4OTYwZDM0NjhlN2Q2NmM1ZWQ5ZjUzZjY3NDgxMmQxYmE4MTZlOTJlZjQwNTZmMTFmYzY1NjhlIiwidGFnIjoiIn0%3D",
+    "domain": "new.vendorschichomz.com",
+    "path": "/",
+    "expires": 1789090835.415358,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  }
+]
