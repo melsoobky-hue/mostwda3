@@ -61,31 +61,31 @@ export default function DateRangePicker({ from, to, onChange }) {
         <span className="text-xs font-medium">{displayLabel()}</span>
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-72 bg-[var(--bg-card-solid)] border border-[var(--border)] rounded-xl shadow-lg z-50 p-3 anim-fade-down" style={{ backdropFilter: 'blur(16px)' }}>
-          <div className="space-y-1 mb-3">
+        <div className="absolute top-full left-0 mt-2 w-72 bg-[var(--bg-card-solid)] border border-[var(--border)] rounded-2xl z-50 p-4 anim-fade-down" style={{ backdropFilter: 'blur(16px)', boxShadow: 'var(--shadow-lg)' }}>
+          <div className="space-y-1.5 mb-4">
             {PRESETS.map(p => (
               <button
                 key={p.value}
                 onClick={() => applyPreset(p)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 ${
                   activePreset === p.value
                     ? 'text-white'
                     : 'hover:bg-[var(--bg-hover)]'
                 }`}
-                style={activePreset === p.value ? { background: 'var(--gradient-1)', color: '#fff' } : { color: 'var(--text-secondary)' }}
+                style={activePreset === p.value ? { background: 'var(--gradient-1)', color: '#fff', boxShadow: '0 3px 10px var(--accent-glow)' } : { color: 'var(--text-secondary)' }}
               >
                 {p.label}
               </button>
             ))}
           </div>
           {activePreset === 'custom' && (
-            <div className="border-t pt-3 space-y-2" style={{ borderColor: 'var(--border)' }}>
+            <div className="border-t pt-4 space-y-3" style={{ borderColor: 'var(--border)' }}>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1" style={{ color: 'var(--text-muted)' }}>From</label>
+                <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: 'var(--text-muted)' }}>From</label>
                 <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="input-field text-xs" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1" style={{ color: 'var(--text-muted)' }}>To</label>
+                <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: 'var(--text-muted)' }}>To</label>
                 <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="input-field text-xs" />
               </div>
               <button onClick={applyCustom} className="btn btn-primary btn-sm w-full">Apply Range</button>

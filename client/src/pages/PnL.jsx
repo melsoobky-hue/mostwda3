@@ -57,7 +57,7 @@ export default function PnL() {
   const { summary, expensesByCategory, monthly } = data;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-7">
       {/* Header */}
       <div className="flex items-center justify-between anim-fade-up">
         <div>
@@ -65,11 +65,13 @@ export default function PnL() {
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Financial overview and expenses breakdown</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 bg-[var(--bg-secondary)] rounded-lg p-1">
+          <div className="flex gap-1 rounded-lg p-1" style={{ background: 'var(--bg-secondary)' }}>
             {['today', 'week', 'month', 'quarter', 'year'].map(p => (
               <button key={p} onClick={() => setQuickPeriod(p)}
-                className={`px-2 py-1 rounded-md text-[10px] font-semibold transition-all ${period === p ? 'text-white' : 'hover:bg-[var(--bg-hover)]'}`}
-                style={period === p ? { background: 'var(--gradient-1)' } : { color: 'var(--text-muted)' }}>
+                className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all duration-200 ${period === p ? 'text-white shadow-sm' : 'hover:bg-[var(--bg-hover)]'}`}
+                style={period === p
+                  ? { background: 'var(--gradient-1)', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }
+                  : { color: 'var(--text-muted)' }}>
                 {p.charAt(0).toUpperCase() + p.slice(1)}
               </button>
             ))}
@@ -81,16 +83,16 @@ export default function PnL() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 anim-fade-up stagger-1">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 anim-fade-up stagger-1">
         {[
           { label: 'Revenue', value: `EGP ${(summary.revenue || 0).toLocaleString()}`, gradient: 'var(--gradient-2)', color: 'var(--text-primary)' },
           { label: 'COGS', value: `EGP ${(summary.cogs || 0).toLocaleString()}`, gradient: 'var(--gradient-4)', color: 'var(--text-secondary)' },
           { label: 'Gross Profit', value: `EGP ${(summary.grossProfit || 0).toLocaleString()}`, gradient: 'var(--gradient-3)', color: (summary.grossProfit || 0) >= 0 ? 'var(--success)' : 'var(--danger)' },
           { label: 'Net Profit', value: `EGP ${(summary.netProfit || 0).toLocaleString()}`, gradient: 'var(--gradient-1)', color: (summary.netProfit || 0) >= 0 ? 'var(--success)' : 'var(--danger)' },
         ].map((kpi, i) => (
-          <div key={i} className="relative overflow-hidden rounded-xl p-4" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
+          <div key={i} className="relative overflow-hidden rounded-xl p-5 transition-all duration-200 hover:shadow-md" style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)' }}>
             <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: kpi.gradient }}></div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{kpi.label}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>{kpi.label}</p>
             <p className="text-lg font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
           </div>
         ))}
@@ -106,19 +108,20 @@ export default function PnL() {
           { label: 'Orders', value: summary.totalOrders || 0, color: 'var(--text-primary)' },
           { label: 'Delivered', value: summary.delivered || 0, color: 'var(--success)' },
         ].map((kpi, i) => (
-          <div key={i} className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-            <p className="text-[9px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{kpi.label}</p>
+          <div key={i} className="rounded-xl p-3.5 text-center transition-all duration-200 hover:shadow-sm cursor-default" style={{ background: 'color-mix(in srgb, var(--bg-secondary) 80%, var(--bg-card-solid) 20%)', border: '1px solid var(--border)' }}>
+            <p className="text-[9px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{kpi.label}</p>
             <p className="text-sm font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Trend */}
         {monthly.length > 0 && (
           <div className="card anim-fade-up stagger-3">
-            <div className="section-header">
+            <div className="section-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem', marginBottom: '0.75rem' }}>
               <span className="section-title">Monthly Trend</span>
+              <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Revenue, Profit & COGS</span>
             </div>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={monthly}>
@@ -138,8 +141,9 @@ export default function PnL() {
         {/* Expenses by Category */}
         {expensesByCategory.length > 0 && (
           <div className="card anim-fade-up stagger-4">
-            <div className="section-header">
+            <div className="section-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem', marginBottom: '0.75rem' }}>
               <span className="section-title">Expenses by Category</span>
+              <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{expensesByCategory.length} categories</span>
             </div>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -149,9 +153,11 @@ export default function PnL() {
                 <Tooltip contentStyle={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11 }} />
               </PieChart>
             </ResponsiveContainer>
-            <div className="space-y-1.5 mt-2">
+            <div className="space-y-1.5 mt-3">
               {expensesByCategory.map((cat, i) => (
-                <div key={i} className="flex items-center justify-between px-3 py-1.5 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+                <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg transition-colors duration-150" style={{ background: 'color-mix(in srgb, var(--bg-secondary) 70%, transparent 30%)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--bg-secondary) 100%, transparent 0%)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--bg-secondary) 70%, transparent 30%)'}>
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i % COLORS.length] }}></div>
                     <span className="text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{cat.category}</span>
@@ -166,10 +172,10 @@ export default function PnL() {
 
       {/* P&L Breakdown Table */}
       <div className="card anim-fade-up stagger-5">
-        <div className="section-header">
+        <div className="section-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem', marginBottom: '0.5rem' }}>
           <span className="section-title">P&L Breakdown</span>
         </div>
-        <div className="space-y-0">
+        <div className="space-y-0 overflow-hidden rounded-xl" style={{ border: '1px solid color-mix(in srgb, var(--border) 60%, transparent 40%)' }}>
           {[
             { label: 'Revenue (Sales)', value: summary.revenue, color: 'var(--text-primary)', bold: true },
             { label: 'Cost of Goods Sold (COGS)', value: -summary.cogs, color: 'var(--danger)' },
@@ -178,7 +184,11 @@ export default function PnL() {
             { label: 'Total Expenses', value: -summary.totalExpenses, color: 'var(--danger)', bold: true },
             { label: 'NET PROFIT', value: summary.netProfit, color: (summary.netProfit || 0) >= 0 ? 'var(--success)' : 'var(--danger)', bold: true, border: true },
           ].map((item, i) => (
-            <div key={i} className={`flex items-center justify-between px-4 py-2.5 ${item.border ? 'border-t' : ''}`} style={{ borderColor: 'var(--border)' }}>
+            <div key={i}
+              className={`flex items-center justify-between px-4 py-3 transition-colors duration-150 ${item.border ? 'border-t' : ''}`}
+              style={{ borderColor: 'var(--border)', background: i % 2 === 0 ? 'color-mix(in srgb, var(--bg-secondary) 40%, transparent 60%)' : 'transparent' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--bg-secondary) 80%, transparent 20%)'}
+              onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'color-mix(in srgb, var(--bg-secondary) 40%, transparent 60%)' : 'transparent'}>
               <span className={`text-[12px] ${item.bold ? 'font-bold' : 'font-medium'}`} style={{ color: 'var(--text-primary)' }}>{item.label}</span>
               <span className={`text-[12px] ${item.bold ? 'font-bold' : 'font-semibold'}`} style={{ color: item.color }}>
                 EGP {Math.abs(item.value || 0).toLocaleString()} {item.value < 0 ? '' : ''}

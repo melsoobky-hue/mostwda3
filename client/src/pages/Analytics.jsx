@@ -53,10 +53,18 @@ const gridStyle = { strokeDasharray: '3 3', stroke: 'var(--border)', opacity: 0.
 /* ── KPI CARD ──────────────────────────────────────── */
 function KpiCard({ label, value, gradient, icon, delay = 1 }) {
   return (
-    <div className={`stat-card anim-fade-up stagger-${delay}`} style={{ overflow: 'hidden' }}>
+    <div className={`stat-card anim-fade-up stagger-${delay} hover:-translate-y-0.5 transition-all duration-200`}
+      style={{ overflow: 'hidden', padding: '22px' }}>
       <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: gradient }} />
       <div className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-10 pointer-events-none"
         style={{ background: gradient, filter: 'blur(28px)', transform: 'translate(30%,-30%)' }} />
+      <div className="absolute rounded-full pointer-events-none"
+        style={{
+          width: 52, height: 52,
+          right: 10, top: '50%', transform: 'translateY(-50%)',
+          background: gradient, opacity: 0.15,
+          filter: 'blur(14px)',
+        }} />
       <div className="flex items-center justify-between relative">
         <div>
           <p className="text-[10px] font-700 uppercase tracking-widest mb-1.5"
@@ -68,8 +76,8 @@ function KpiCard({ label, value, gradient, icon, delay = 1 }) {
             {value}
           </p>
         </div>
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: gradient, boxShadow: '0 4px 14px rgba(0,0,0,.2)' }}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: gradient, boxShadow: '0 4px 16px rgba(0,0,0,.15)' }}>
           <span className="text-base">{icon}</span>
         </div>
       </div>
@@ -80,8 +88,9 @@ function KpiCard({ label, value, gradient, icon, delay = 1 }) {
 /* ── CHART CARD ────────────────────────────────────── */
 function ChartCard({ title, badge, children, className = '', delay = 1 }) {
   return (
-    <div className={`card anim-fade-up stagger-${delay} ${className}`}>
-      <div className="section-header">
+    <div className={`card anim-fade-up stagger-${delay} ${className}`}
+      style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.04), 0 1px 6px rgba(0,0,0,0.02)' }}>
+      <div className="section-header" style={{ paddingBottom: '14px', marginBottom: '18px' }}>
         <span className="section-title">{title}</span>
         {badge && <span className="badge badge-gray">{badge}</span>}
       </div>
@@ -134,11 +143,14 @@ export default function Analytics() {
             {timeRange === 'all' ? 'all time' : `last ${timeRange} days`}
           </span>
         </p>
-        <div className="flex items-center gap-1.5 p-1 rounded-xl border" style={{ borderColor: 'var(--border-strong)', background: 'var(--bg-hover)' }}>
+        <div className="flex items-center gap-1.5 p-1.5 rounded-xl border" style={{ borderColor: 'var(--border-strong)', background: 'var(--bg-hover)' }}>
           {[['all','All'],['7','7d'],['30','30d'],['90','90d']].map(([val, lbl]) => (
             <button key={val} onClick={() => setTimeRange(val)}
               className={`btn btn-xs ${timeRange === val ? 'btn-primary' : 'btn-ghost'}`}
-              style={{ minWidth: 38 }}>
+              style={{
+                minWidth: 40, borderRadius: 8, padding: '4px 10px',
+                ...(timeRange === val ? { background: 'linear-gradient(135deg, #f59e0b, #f97316)', boxShadow: '0 2px 10px rgba(245,158,11,0.25)' } : {}),
+              }}>
               {lbl}
             </button>
           ))}
@@ -146,19 +158,19 @@ export default function Analytics() {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <KpiCard delay={1} label={t('totalRevenue')} gradient="var(--gradient-2)" icon="💰"
           value={`EGP ${(s.totalRevenue || 0).toLocaleString()}`} />
         <KpiCard delay={2} label={t('totalProfit')}  gradient="var(--gradient-3)" icon="📈"
           value={`EGP ${(s.totalProfit || 0).toLocaleString()}`} />
-        <KpiCard delay={3} label={t('avgMargin')}    gradient="var(--gradient-1)" icon="%" 
+        <KpiCard delay={3} label={t('avgMargin')}    gradient="var(--gradient-1)" icon="%"
           value={`${(s.avgMargin || 0).toFixed(1)}%`} />
         <KpiCard delay={4} label={t('totalOrders')}  gradient="var(--gradient-4)" icon="🧾"
           value={(s.totalOrders || 0).toLocaleString()} />
       </div>
 
       {/* Revenue trend + channel donut */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         <ChartCard title="Revenue & Profit Over Time" delay={5} className="lg:col-span-2">
           <ResponsiveContainer width="100%" height={280}>
@@ -190,13 +202,13 @@ export default function Analytics() {
               <Tooltip content={<ChartTooltip />} />
             </PieChart>
           </ResponsiveContainer>
-          <div className="space-y-2.5 mt-3">
+          <div className="space-y-3 mt-3">
             {channelData.map((item, i) => {
               const total = channelData.reduce((a, b) => a + b.value, 0) || 1;
               const pct   = Math.round((item.value / total) * 100);
               return (
-                <div key={i} className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
+                <div key={i} className="flex items-center gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
                   <span className="text-[11px] flex-1 capitalize truncate" style={{ color: 'var(--text-secondary)' }}>
                     {item.name}
                   </span>
@@ -215,19 +227,19 @@ export default function Analytics() {
       </div>
 
       {/* Status + Governorate + Hourly */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Status breakdown */}
         <ChartCard title="Orders by Status" delay={7}>
-          <div className="space-y-2.5">
+          <div className="space-y-3.5">
             {statusData.map((item, i) => {
               const color = STATUS_COLORS[item.name] || COLORS[i % COLORS.length];
               const pct   = Math.round((item.value / totalOrders) * 100);
               return (
                 <div key={i}>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color, opacity: 0.8 }} />
                       <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>{item.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -236,7 +248,7 @@ export default function Analytics() {
                     </div>
                   </div>
                   <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${pct}%`, background: color }} />
+                    <div className="progress-fill" style={{ width: `${pct}%`, background: color, opacity: 0.85, borderRadius: 4 }} />
                   </div>
                 </div>
               );
@@ -287,14 +299,14 @@ export default function Analytics() {
 
       {/* Top Products */}
       <ChartCard title="Top Products by Revenue" delay={9}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {topProducts.slice(0, 10).map((p, i) => {
             const maxRev = topProducts[0]?.revenue || 1;
             const pct    = Math.round((p.revenue / maxRev) * 100);
             return (
               <div key={i}
-                className="flex items-center gap-3 p-3 rounded-xl transition-colors"
-                style={{ border: '1px solid var(--border)', background: 'var(--bg-hover)' }}
+                className="flex items-center gap-3 p-3.5 rounded-xl transition-all duration-200 hover:shadow-sm"
+                style={{ border: '1px solid var(--border)', background: 'rgba(245, 158, 11, 0.03)' }}
               >
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-800 text-white flex-shrink-0"
                   style={{ background: COLORS[i % COLORS.length], fontWeight: 800 }}>
@@ -331,12 +343,12 @@ export default function Analytics() {
       {channelData.length > 0 && (
         <ChartCard title="Revenue by Channel" delay={9}>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={channelData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+            <BarChart data={channelData} margin={{ top: 8, right: 8, left: -12, bottom: 4 }}>
               <CartesianGrid {...gridStyle} vertical={false} />
               <XAxis dataKey="name" {...axisStyle} tickLine={false} axisLine={false} />
               <YAxis {...axisStyle} tickLine={false} axisLine={false} />
               <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="value" name="orders" radius={[6, 6, 0, 0]} maxBarSize={48}>
+              <Bar dataKey="value" name="orders" radius={[6, 6, 0, 0]} maxBarSize={48} barSize={36}>
                 {channelData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Bar>
             </BarChart>

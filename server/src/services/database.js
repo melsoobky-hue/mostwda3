@@ -1016,3 +1016,82 @@ export function getProfitLoss(dateFrom, dateTo) {
     monthly,
   };
 }
+
+// ─── Customers ─────────────────────────────────────────────────────────────
+
+export function getCustomers(filters = {}) {
+  const conditions = ['customer_phone IS NOT NULL', "customer_phone != ''"];
+  const params = [];
+
+  if (filters.search) {
+    conditions.push('(customer_name LIKE ? OR customer_phone LIKE ? OR customer_email LIKE ?)');
+    const s = `%${filters.search}%`;
+    params.push(s, s, s);
+  }
+
+  const where = conditions.join(' AND ');
+  const allowedSort = ['customer_name', 'total_orders', 'total_spent', 'last_order_date'];
+  const sortBy = allowedSort.includes(filters.sortBy) ? filters.sortBy : 'total_spent';
+  const sortDir = filters.sortDir === 'asc' ? 'ASC' : 'DESC';
+
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(500, parseInt(filters.limit) || 50);
+  const offset = (page - 1) * limit;
+
+  const total = execCount(`SELECT COUNT(DISTINCT customer_phone) FROM orders WHERE ${where}`, params);
+
+  const customers = queryAll(`
+    SELECT
+      customer_phone as phone,
+      customer_name as name,
+      customer_email as email,
+      customer_governorate as governorate,
+      customer_address as address,
+      COUNT(*) as total_orders,
+      COALESCE(SUM(total_price), 0) as total_spent,
+      COALESCE(SUM(profit), 0) as total_profit,
+      COALESCE(AVG(total_price), 0) as avg_order_value,
+      MIN(order_date) as first_order_date,
+      MAX(order_date) as last_order_date,
+      GROUP_CONCAT(DISTINCT channel) as channels,
+      SUM(CASE WHEN status IN ('Delivered','Fulfilled') THEN 1 ELSE 0 END) as delivered_count,
+      SUM(CASE WHEN status IN ('Cancelled','Failed','Rejected') THEN 1 ELSE 0 END) as cancelled_count
+    FROM orders
+    WHERE ${where}
+    GROUP BY customer_phone
+    ORDER BY ${sortBy} ${sortDir}
+    LIMIT ? OFFSET ?
+  `, [...params, limit, offset]);
+
+  return { customers, total, page, limit };
+}
+
+export function getCustomerByPhone(phone) {
+  const customers = queryAll(`
+    SELECT
+      customer_phone as phone,
+      customer_name as name,
+      customer_email as email,
+      customer_governorate as governorate,
+      customer_address as address,
+      COUNT(*) as total_orders,
+      COALESCE(SUM(total_price), 0) as total_spent,
+      COALESCE(SUM(profit), 0) as total_profit,
+      COALESCE(AVG(total_price), 0) as avg_order_value,
+      MIN(order_date) as first_order_date,
+      MAX(order_date) as last_order_date,
+      GROUP_CONCAT(DISTINCT channel) as channels,
+      SUM(CASE WHEN status IN ('Delivered','Fulfilled') THEN 1 ELSE 0 END) as delivered_count,
+      SUM(CASE WHEN status IN ('Cancelled','Failed','Rejected') THEN 1 ELSE 0 END) as cancelled_count
+    FROM orders WHERE customer_phone = ?
+    GROUP BY customer_phone
+  `, [phone]);
+  return customers.length > 0 ? customers[0] : null;
+}
+
+export function getCustomerOrders(phone) {
+  return queryAll(
+    'SELECT * FROM orders WHERE customer_phone = ? ORDER BY order_date DESC',
+    [phone]
+  );
+}

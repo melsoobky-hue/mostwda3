@@ -48,10 +48,10 @@ export default function GlobalSearch({ open, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center pt-[10vh] px-4" style={{ background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
-      <div className="w-full max-w-2xl anim-scale" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)' }}>
+      <div className="w-full max-w-2xl anim-scale" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-xl)' }}>
 
         {/* Search input */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+        <div className="flex items-center gap-3 px-6 py-5 border-b rounded-t-[var(--radius-xl)]" style={{ borderColor: 'var(--border)', background: 'var(--bg-input)' }}>
           <svg className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--accent)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
           <input
             ref={inputRef}
@@ -59,22 +59,22 @@ export default function GlobalSearch({ open, onClose }) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search orders, products, customers..."
-            className="flex-1 bg-transparent border-none outline-none text-sm font-medium"
+            className="flex-1 bg-transparent border-none outline-none text-sm font-medium placeholder:opacity-70"
             style={{ color: 'var(--text-primary)' }}
           />
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             {loading && <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border)', borderTopColor: 'var(--accent)' }}></div>}
-            <kbd className="px-1.5 py-0.5 rounded text-[9px] font-mono" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>ESC</kbd>
+            <kbd className="px-2 py-0.5 rounded-lg text-[9px] font-mono" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)', boxShadow: '0 1px 2px rgba(60,40,10,0.05)' }}>ESC</kbd>
           </div>
         </div>
 
         {/* Tabs */}
         {query.length >= 2 && (
-          <div className="flex gap-1 px-5 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+          <div className="flex gap-1.5 px-6 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
             {tabs.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${activeTab === tab.key ? 'text-white' : 'hover:bg-[var(--bg-hover)]'}`}
-                style={activeTab === tab.key ? { background: 'var(--gradient-1)' } : { color: 'var(--text-muted)' }}>
+                className={`px-4 py-2 rounded-lg text-[11px] font-semibold transition-all duration-200 ${activeTab === tab.key ? 'text-white' : 'hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}
+                style={activeTab === tab.key ? { background: 'var(--gradient-1)', boxShadow: '0 3px 12px var(--accent-glow)' } : { color: 'var(--text-muted)' }}>
                 {tab.label} {tab.count > 0 && <span className="ml-1 opacity-70">({tab.count})</span>}
               </button>
             ))}
@@ -82,25 +82,25 @@ export default function GlobalSearch({ open, onClose }) {
         )}
 
         {/* Results */}
-        <div className="max-h-[50vh] overflow-y-auto p-3">
+        <div className="max-h-[50vh] overflow-y-auto p-4">
           {query.length < 2 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-10">
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Type at least 2 characters to search</p>
             </div>
           ) : totalResults === 0 && !loading ? (
-            <div className="text-center py-8">
+            <div className="text-center py-10">
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No results found for "{query}"</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* Orders */}
               {filtered.orders && filtered.orders.length > 0 && (activeTab === 'all' || activeTab === 'orders') && (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider px-2 mb-1.5" style={{ color: 'var(--accent)' }}>Orders</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider px-3 mb-2" style={{ color: 'var(--accent)' }}>Orders</p>
                   {filtered.orders.map(order => (
-                    <div key={order.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-hover)] transition-colors"
+                    <div key={order.id} className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer hover:bg-[var(--bg-hover)] transition-all duration-200"
                       onClick={() => { navigate('/orders'); onClose(); }}>
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-glow)' }}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-glow)' }}>
                         <svg className="w-4 h-4" style={{ color: 'var(--accent)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -122,11 +122,11 @@ export default function GlobalSearch({ open, onClose }) {
               {/* Products */}
               {filtered.products && filtered.products.length > 0 && (activeTab === 'all' || activeTab === 'products') && (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider px-2 mb-1.5" style={{ color: '#a78bfa' }}>Products</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider px-3 mb-2" style={{ color: '#a78bfa' }}>Products</p>
                   {filtered.products.map(product => (
-                    <div key={product.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-hover)] transition-colors"
+                    <div key={product.id} className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer hover:bg-[var(--bg-hover)] transition-all duration-200"
                       onClick={() => { navigate('/products'); onClose(); }}>
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(139,92,246,0.15)' }}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(139,92,246,0.15)' }}>
                         <svg className="w-4 h-4" style={{ color: '#a78bfa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -142,11 +142,11 @@ export default function GlobalSearch({ open, onClose }) {
               {/* Customers */}
               {filtered.customers && filtered.customers.length > 0 && (activeTab === 'all' || activeTab === 'customers') && (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider px-2 mb-1.5" style={{ color: 'var(--info)' }}>Customers</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider px-3 mb-2" style={{ color: 'var(--info)' }}>Customers</p>
                   {filtered.customers.map((customer, i) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[var(--bg-hover)] transition-colors"
+                    <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer hover:bg-[var(--bg-hover)] transition-all duration-200"
                       onClick={() => { navigate('/customers'); onClose(); }}>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white" style={{ background: 'var(--gradient-2)' }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white shadow-md" style={{ background: 'var(--gradient-2)' }}>
                         {(customer.name || customer.phone || '?')[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">

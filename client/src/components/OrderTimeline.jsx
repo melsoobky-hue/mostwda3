@@ -16,12 +16,12 @@ export default function OrderTimeline({ order }) {
       {events.map((ev, i) => (
         <div key={i} className="flex gap-3 relative">
           {i < events.length - 1 && (
-            <div className="absolute left-[13px] top-[28px] w-[2px] h-[calc(100%-8px)]" style={{ background: 'var(--border)' }}></div>
+            <div className="absolute left-[15px] top-[32px] w-[2px] h-[calc(100%-8px)] rounded-full" style={{ background: 'linear-gradient(180deg, var(--border-hover), var(--border-strong))' }}></div>
           )}
-          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 z-10" style={{ background: `${ev.color}20`, border: `2px solid ${ev.color}` }}>
-            <svg className="w-3 h-3" fill="none" stroke={ev.color} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ev.icon} /></svg>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10" style={{ background: `${ev.color}20`, border: `2px solid ${ev.color}`, boxShadow: ev.color === 'var(--success)' ? '0 0 0 4px var(--bg-card-solid), 0 2px 8px var(--success-bg)' : ev.color === 'var(--danger)' ? '0 0 0 4px var(--bg-card-solid), 0 2px 8px var(--danger-bg)' : ev.color === 'var(--warning)' ? '0 0 0 4px var(--bg-card-solid), 0 2px 8px var(--warning-bg)' : ev.color === 'var(--info)' ? '0 0 0 4px var(--bg-card-solid), 0 2px 8px var(--info-bg)' : '0 0 0 4px var(--bg-card-solid), 0 2px 8px var(--accent-glow)' }}>
+            <svg className="w-3.5 h-3.5" fill="none" stroke={ev.color} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ev.icon} /></svg>
           </div>
-          <div className="pb-4">
+          <div className="pb-6">
             <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{ev.label}</p>
             {ev.date && <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{ev.date}</p>}
           </div>

@@ -48,11 +48,11 @@ export default function Shipping() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-center justify-between anim-fade-up">
         <div>
           <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Shipping</h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{shipments.length} shipments tracked</p>
+          <p className="text-xs mt-1.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>{shipments.length} shipments tracked</p>
         </div>
         <button onClick={() => setShowAddModal(true)} className="btn btn-primary btn-sm">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
@@ -61,8 +61,8 @@ export default function Shipping() {
       </div>
 
       <div className="card anim-fade-up stagger-1">
-        <div className="flex items-center gap-3">
-          <select value={filter} onChange={e => setFilter(e.target.value)} className="input-field">
+        <div className="flex items-center gap-4">
+          <select value={filter} onChange={e => setFilter(e.target.value)} className="input-field" style={{ background: 'var(--bg-tertiary, var(--bg-secondary))' }}>
             <option value="">All Statuses</option>
             <option value="Pending">Pending</option>
             <option value="Picked Up">Picked Up</option>
@@ -71,7 +71,7 @@ export default function Shipping() {
             <option value="Returned">Returned</option>
             <option value="Failed">Failed</option>
           </select>
-          <select value={companyFilter} onChange={e => setCompanyFilter(e.target.value)} className="input-field">
+          <select value={companyFilter} onChange={e => setCompanyFilter(e.target.value)} className="input-field" style={{ background: 'var(--bg-tertiary, var(--bg-secondary))' }}>
             <option value="">All Companies</option>
             <option value="Bosta">Bosta</option>
             <option value="J&T">J&T</option>
@@ -81,35 +81,37 @@ export default function Shipping() {
         </div>
       </div>
 
-      <div className="card anim-fade-up stagger-2" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="card anim-fade-up stagger-2" style={{ padding: 0, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
         {loading ? (
-          <div className="flex items-center justify-center h-32">
+          <div className="flex items-center justify-center h-36">
             <div className="w-8 h-8 border-3 rounded-full animate-spin" style={{ borderColor: 'var(--border)', borderTopColor: 'var(--accent)' }}></div>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: 'rgba(0,0,0,0.015)' }}>
                   {['Order', 'Company', 'Tracking', 'Status', 'Pickup', 'Delivery', 'Actions'].map(h => (
-                    <th key={h} className="text-left py-3 px-4 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{h}</th>
+                    <th key={h} className="text-left py-3.5 px-5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {shipments.map(s => (
-                  <tr key={s.id} className="table-row">
-                    <td className="py-3 px-4 text-[11px] font-mono font-semibold" style={{ color: 'var(--accent)' }}>#{s.source_order_id}</td>
-                    <td className="py-3 px-4 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{s.shipping_company}</td>
-                    <td className="py-3 px-4 flex items-center gap-1">
+                  <tr key={s.id} className="table-row" style={{ transition: 'background 0.15s ease' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,115,85,0.03)'}
+                    onMouseLeave={e => e.currentTarget.style.background = ''}>
+                    <td className="py-3.5 px-5 text-[11px] font-mono font-semibold" style={{ color: 'var(--accent)' }}>#{s.source_order_id}</td>
+                    <td className="py-3.5 px-5 text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>{s.shipping_company}</td>
+                    <td className="py-3.5 px-5 flex items-center gap-1.5">
                       <span className="text-[11px] font-mono" style={{ color: 'var(--text-primary)' }}>{s.tracking_number || '-'}</span>
                       {s.tracking_number && <CopyButton text={s.tracking_number} label="Tracking" />}
                     </td>
-                    <td className="py-3 px-4"><span className={`badge ${getStatusBadge(s.status)}`}>{s.status}</span></td>
-                    <td className="py-3 px-4 text-[11px]" style={{ color: 'var(--text-muted)' }}>{s.pickup_date || '-'}</td>
-                    <td className="py-3 px-4 text-[11px]" style={{ color: 'var(--text-muted)' }}>{s.delivery_date || '-'}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-1">
+                    <td className="py-3.5 px-5"><span className={`badge ${getStatusBadge(s.status)}`}>{s.status}</span></td>
+                    <td className="py-3.5 px-5 text-[11px]" style={{ color: 'var(--text-muted)' }}>{s.pickup_date || '-'}</td>
+                    <td className="py-3.5 px-5 text-[11px]" style={{ color: 'var(--text-muted)' }}>{s.delivery_date || '-'}</td>
+                    <td className="py-3.5 px-5">
+                      <div className="flex gap-1.5">
                         {s.tracking_number && (
                           <a href={`https://bosta.co/track/${s.tracking_number}`} target="_blank" rel="noopener noreferrer"
                             className="btn btn-ghost btn-sm p-1.5" title="Track on Bosta">
@@ -124,7 +126,7 @@ export default function Shipping() {
                     </td>
                   </tr>
                 ))}
-                {shipments.length === 0 && <tr><td colSpan="7" className="py-12 text-center text-xs" style={{ color: 'var(--text-muted)' }}>No shipments found</td></tr>}
+                {shipments.length === 0 && <tr><td colSpan="7" className="py-14 text-center text-xs" style={{ color: 'var(--text-muted)' }}>No shipments found</td></tr>}
               </tbody>
             </table>
           </div>
@@ -133,14 +135,14 @@ export default function Shipping() {
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(8px)' }} onClick={() => setShowAddModal(false)}>
-          <div className="w-full max-w-md card anim-scale" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Add Shipment</h2>
-            <form onSubmit={handleAdd} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(30,25,20,0.55)', backdropFilter: 'blur(16px)' }} onClick={() => setShowAddModal(false)}>
+          <div className="w-full max-w-md card anim-scale" style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.12)' }} onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold mb-5" style={{ color: 'var(--text-primary)' }}>Add Shipment</h2>
+            <form onSubmit={handleAdd} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-muted)' }}>Source</label>
-                  <select value={form.source} onChange={e => setForm({ ...form, source: e.target.value })} className="input-field" required>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Source</label>
+                  <select value={form.source} onChange={e => setForm({ ...form, source: e.target.value })} className="input-field" required style={{ background: 'var(--bg-tertiary, var(--bg-secondary))' }}>
                     <option value="">Select</option>
                     <option value="mostwda3">Mostwda3</option>
                     <option value="chichomz">Chichomz</option>
@@ -149,14 +151,14 @@ export default function Shipping() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-muted)' }}>Order ID</label>
-                  <input required value={form.source_order_id} onChange={e => setForm({ ...form, source_order_id: e.target.value })} className="input-field" />
+                  <label className="text-[10px] font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Order ID</label>
+                  <input required value={form.source_order_id} onChange={e => setForm({ ...form, source_order_id: e.target.value })} className="input-field" style={{ background: 'var(--bg-tertiary, var(--bg-secondary))' }} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-muted)' }}>Company</label>
-                  <select value={form.shipping_company} onChange={e => setForm({ ...form, shipping_company: e.target.value })} className="input-field">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Company</label>
+                  <select value={form.shipping_company} onChange={e => setForm({ ...form, shipping_company: e.target.value })} className="input-field" style={{ background: 'var(--bg-tertiary, var(--bg-secondary))' }}>
                     <option value="Bosta">Bosta</option>
                     <option value="J&T">J&T</option>
                     <option value="Aramex">Aramex</option>
@@ -164,17 +166,17 @@ export default function Shipping() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-muted)' }}>Tracking #</label>
-                  <input value={form.tracking_number} onChange={e => setForm({ ...form, tracking_number: e.target.value })} className="input-field" />
+                  <label className="text-[10px] font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Tracking #</label>
+                  <input value={form.tracking_number} onChange={e => setForm({ ...form, tracking_number: e.target.value })} className="input-field" style={{ background: 'var(--bg-tertiary, var(--bg-secondary))' }} />
                 </div>
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider mb-1 block" style={{ color: 'var(--text-muted)' }}>Status</label>
-                <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="input-field">
+                <label className="text-[10px] font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Status</label>
+                <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="input-field" style={{ background: 'var(--bg-tertiary, var(--bg-secondary))' }}>
                   {['Pending', 'Picked Up', 'In Transit', 'Delivered', 'Returned', 'Failed'].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2.5 pt-3">
                 <button type="button" onClick={() => setShowAddModal(false)} className="btn btn-secondary btn-sm">Cancel</button>
                 <button type="submit" className="btn btn-primary btn-sm">Add Shipment</button>
               </div>

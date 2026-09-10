@@ -48,23 +48,23 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ toast, addToast, removeToast }}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2" style={{ direction: 'ltr' }}>
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3" style={{ direction: 'ltr' }}>
         {toasts.map(t => (
           <div
             key={t.id}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg anim-fade-up cursor-pointer min-w-[280px] max-w-[400px]"
+            className="flex items-center gap-3 px-5 py-4 rounded-2xl anim-fade-up cursor-pointer min-w-[300px] max-w-[420px]"
             style={{
               background: 'var(--bg-card-solid)',
               border: `1px solid ${colors[t.type].bg}`,
-              boxShadow: `0 4px 20px ${colors[t.type].glow}`,
+              boxShadow: `0 2px 8px ${colors[t.type].glow}, 0 16px 40px rgba(60,40,10,0.10)`,
             }}
             onClick={() => removeToast(t.id)}
           >
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: colors[t.type].glow, color: colors[t.type].bg }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: colors[t.type].glow, color: colors[t.type].bg }}>
               {icons[t.type]}
             </div>
             <span className="text-xs font-medium flex-1" style={{ color: 'var(--text-primary)' }}>{t.message}</span>
-            <svg className="w-3.5 h-3.5 flex-shrink-0 cursor-pointer opacity-50 hover:opacity-100 transition-opacity" style={{ color: 'var(--text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <svg className="w-3.5 h-3.5 p-1 rounded-lg flex-shrink-0 cursor-pointer opacity-50 transition-all duration-200 hover:opacity-100 hover:bg-[var(--bg-hover)]" style={{ color: 'var(--text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </div>
         ))}
       </div>

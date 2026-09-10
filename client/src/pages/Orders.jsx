@@ -99,16 +99,16 @@ export default function Orders() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-center justify-between anim-fade-up">
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('orders')}</h1>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{total} orders total {selectedIds.size > 0 && `· ${selectedIds.size} selected`}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{total} orders total {selectedIds.size > 0 && `· ${selectedIds.size} selected`}</p>
           </div>
           <RefreshIndicator lastUpdated={lastUpdated} onRefresh={fetchOrders} loading={loading} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <ColumnToggle columns={allColumns} visible={visibleCols} onToggle={toggleCol} />
           {selectedIds.size > 0 && (
             <button onClick={bulkExport} className="btn btn-primary btn-sm">
@@ -126,8 +126,11 @@ export default function Orders() {
         </div>
       </div>
 
+      <div className="anim-fade-up stagger-1" style={{ height: '1px', background: 'linear-gradient(90deg, transparent, var(--accent), transparent)', opacity: 0.35 }} />
+
       <div className="card anim-fade-up stagger-1">
-        <form onSubmit={handleSearch} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Filters</p>
+        <form onSubmit={handleSearch} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
           <input data-search-input type="text" placeholder={t('searchOrders')} value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} className="input-field col-span-2" />
           <select value={filters.source} onChange={e => setFilters({ ...filters, source: e.target.value })} className="input-field">
             <option value="">All Channels</option>
@@ -167,11 +170,11 @@ export default function Orders() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
-                    <th className="py-3 px-4 w-10">
+                    <th className="py-3.5 px-5 w-10">
                       <input type="checkbox" checked={selectedIds.size === orders.length && orders.length > 0} onChange={toggleSelectAll} className="rounded" style={{ accentColor: 'var(--accent)' }} />
                     </th>
                     {allColumns.filter(c => visibleCols.has(c.key)).map(col => (
-                      <th key={col.key} onClick={() => handleSort(col.key)} className="text-left py-3 px-4 text-[10px] font-semibold uppercase tracking-wider cursor-pointer hover:opacity-80" style={{ color: 'var(--text-muted)' }}>
+                      <th key={col.key} onClick={() => handleSort(col.key)} className="text-left py-3.5 px-5 text-[11px] font-bold uppercase tracking-wider cursor-pointer hover:opacity-80" style={{ color: 'var(--text-muted)' }}>
                         {col.label} {sortBy === col.key ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                       </th>
                     ))}
@@ -179,18 +182,18 @@ export default function Orders() {
                 </thead>
                 <tbody>
                   {orders.map(order => (
-                    <tr key={order.id} className={`table-row cursor-pointer ${selectedIds.has(order.id) ? 'bg-[var(--accent-glow)]' : ''}`} onClick={() => setSelectedOrder(order)}>
-                      <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
+                    <tr key={order.id} className={`table-row cursor-pointer transition-colors duration-150 ${selectedIds.has(order.id) ? 'bg-amber-50/60 dark:bg-amber-900/10' : ''}`} style={selectedIds.has(order.id) ? { background: 'rgba(217,156,60,0.06)' } : undefined} onClick={() => setSelectedOrder(order)}>
+                      <td className="py-3.5 px-5" onClick={e => e.stopPropagation()}>
                         <input type="checkbox" checked={selectedIds.has(order.id)} onChange={() => toggleSelect(order.id)} className="rounded" style={{ accentColor: 'var(--accent)' }} />
                       </td>
-                      {visibleCols.has('source_order_id') && <td className="py-3 px-4 flex items-center gap-1"><span className="text-xs font-mono font-semibold" style={{ color: 'var(--accent)' }}>#{order.source_order_id}</span><CopyButton text={String(order.source_order_id)} label="Order ID" /></td>}
-                      {visibleCols.has('customer_name') && <td className="py-3 px-4 text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{order.customer_name || '-'}</td>}
-                      {visibleCols.has('channel') && <td className="py-3 px-4"><span className={`badge ${getChannelBadge(order.channel)}`}>{order.channel || order.source}</span></td>}
-                      {visibleCols.has('mirror_type') && <td className="py-3 px-4">{order.mirror_type ? <span className="badge badge-purple">{order.mirror_type}</span> : order.mirror_dimensions ? <span className="badge badge-gray">{order.mirror_dimensions}</span> : <span className="text-xs" style={{ color: 'var(--text-muted)' }}>-</span>}</td>}
-                      {visibleCols.has('total_price') && <td className="py-3 px-4 text-xs font-bold" style={{ color: 'var(--text-primary)' }}>EGP {order.total_price?.toLocaleString()}</td>}
-                      {visibleCols.has('profit') && <td className="py-3 px-4 text-xs font-semibold" style={{ color: (order.profit || 0) >= 0 ? 'var(--success)' : 'var(--danger)' }}>EGP {order.profit?.toLocaleString() || 0}</td>}
-                      {visibleCols.has('status') && <td className="py-3 px-4"><span className={`badge ${getStatusBadge(order.status)}`}>{order.status}</span></td>}
-                      {visibleCols.has('order_date') && <td className="py-3 px-4 text-[11px]" style={{ color: 'var(--text-muted)' }}>{order.order_date}</td>}
+                      {visibleCols.has('source_order_id') && <td className="py-3.5 px-5 flex items-center gap-1"><span className="text-xs font-mono font-semibold" style={{ color: 'var(--accent)' }}>#{order.source_order_id}</span><CopyButton text={String(order.source_order_id)} label="Order ID" /></td>}
+                      {visibleCols.has('customer_name') && <td className="py-3.5 px-5 text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{order.customer_name || '-'}</td>}
+                      {visibleCols.has('channel') && <td className="py-3.5 px-5"><span className={`badge ${getChannelBadge(order.channel)}`}>{order.channel || order.source}</span></td>}
+                      {visibleCols.has('mirror_type') && <td className="py-3.5 px-5">{order.mirror_type ? <span className="badge badge-purple">{order.mirror_type}</span> : order.mirror_dimensions ? <span className="badge badge-gray">{order.mirror_dimensions}</span> : <span className="text-xs" style={{ color: 'var(--text-muted)' }}>-</span>}</td>}
+                      {visibleCols.has('total_price') && <td className="py-3.5 px-5 text-xs font-bold" style={{ color: 'var(--text-primary)' }}>EGP {order.total_price?.toLocaleString()}</td>}
+                      {visibleCols.has('profit') && <td className="py-3.5 px-5 text-xs font-semibold" style={{ color: (order.profit || 0) >= 0 ? 'var(--success)' : 'var(--danger)' }}>EGP {order.profit?.toLocaleString() || 0}</td>}
+                      {visibleCols.has('status') && <td className="py-3.5 px-5"><span className={`badge ${getStatusBadge(order.status)}`}>{order.status}</span></td>}
+                      {visibleCols.has('order_date') && <td className="py-3.5 px-5 text-[11px]" style={{ color: 'var(--text-muted)' }}>{order.order_date}</td>}
                     </tr>
                   ))}
                   {orders.length === 0 && <tr><td colSpan={allColumns.filter(c => visibleCols.has(c.key)).length + 1} className="py-12 text-center text-xs" style={{ color: 'var(--text-muted)' }}>{t('noData')}</td></tr>}
@@ -198,11 +201,11 @@ export default function Orders() {
               </table>
             </div>
             {total > 20 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: 'var(--border)' }}>
+              <div className="flex items-center justify-between px-5 py-3.5 border-t" style={{ borderColor: 'var(--border)' }}>
                 <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Page {page} of {Math.ceil(total / 20)}</span>
-                <div className="flex gap-1.5">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn btn-secondary btn-sm disabled:opacity-30">{t('prev')}</button>
-                  <button onClick={() => setPage(p => p + 1)} disabled={page >= Math.ceil(total / 20)} className="btn btn-secondary btn-sm disabled:opacity-30">{t('next')}</button>
+                <div className="flex gap-2">
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn btn-secondary btn-sm disabled:opacity-30" style={{ borderRadius: '9999px', paddingLeft: '1rem', paddingRight: '1rem' }}>{t('prev')}</button>
+                  <button onClick={() => setPage(p => p + 1)} disabled={page >= Math.ceil(total / 20)} className="btn btn-secondary btn-sm disabled:opacity-30" style={{ borderRadius: '9999px', paddingLeft: '1rem', paddingRight: '1rem' }}>{t('next')}</button>
                 </div>
               </div>
             )}
@@ -217,7 +220,7 @@ export default function Orders() {
             {/* ── Header with status stripe ── */}
             <div className="relative overflow-hidden rounded-t-[var(--radius-xl)]">
               <div className="h-1.5 w-full" style={{ background: (selectedOrder.profit || 0) >= 0 ? 'var(--gradient-3)' : 'linear-gradient(135deg, #ef4444, #dc2626)' }}></div>
-              <div className="p-6 pb-4">
+              <div className="p-7 pb-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-glow)' }}>
@@ -244,16 +247,16 @@ export default function Orders() {
                 </div>
 
                 {/* ── Quick KPIs ── */}
-                <div className="grid grid-cols-4 gap-3 mt-5">
+                <div className="grid grid-cols-4 gap-4 mt-6">
                   {[
                     { label: 'Total', value: `EGP ${(selectedOrder.total_price || 0).toLocaleString()}`, gradient: 'var(--gradient-2)' },
                     { label: 'Profit', value: `EGP ${(selectedOrder.profit || 0).toLocaleString()}`, gradient: 'var(--gradient-3)', color: (selectedOrder.profit || 0) >= 0 ? 'var(--success)' : 'var(--danger)' },
                     { label: 'Margin', value: selectedOrder.profit_margin ? `${selectedOrder.profit_margin.toFixed(1)}%` : '-', gradient: 'var(--gradient-1)', color: (selectedOrder.profit || 0) >= 0 ? 'var(--success)' : 'var(--danger)' },
                     { label: 'COD', value: `EGP ${(selectedOrder.cod_amount || 0).toLocaleString()}`, gradient: 'var(--gradient-4)' },
                   ].map((kpi, i) => (
-                    <div key={i} className="relative overflow-hidden rounded-xl p-3" style={{ background: 'var(--bg-secondary)' }}>
+                    <div key={i} className="relative overflow-hidden rounded-xl p-4" style={{ background: 'var(--bg-secondary)' }}>
                       <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: kpi.gradient }}></div>
-                      <p className="text-[9px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{kpi.label}</p>
+                      <p className="text-[9px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{kpi.label}</p>
                       <p className="text-sm font-bold" style={{ color: kpi.color || 'var(--text-primary)' }}>{kpi.value}</p>
                     </div>
                   ))}
@@ -262,7 +265,7 @@ export default function Orders() {
             </div>
 
             {/* ── Content ── */}
-            <div className="px-6 pb-6">
+            <div className="px-7 pb-7">
               {showTimeline ? (
                 <div className="py-4">
                   <OrderTimeline order={selectedOrder} />
@@ -271,14 +274,14 @@ export default function Orders() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                   {/* Customer Card */}
-                  <div className="rounded-xl p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-xl p-5" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                    <div className="flex items-center gap-2 mb-4">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.15)' }}>
                         <svg className="w-4 h-4" style={{ color: 'var(--accent)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                       </div>
                       <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Customer</h3>
                     </div>
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                       {[
                         { label: 'Name', value: selectedOrder.customer_name, bold: true },
                         { label: 'Phone', value: selectedOrder.customer_phone, mono: true },
@@ -301,8 +304,8 @@ export default function Orders() {
                       ))}
                     </div>
                     {/* Quick Status Update */}
-                    <div className="mt-4 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Update Status</p>
+                    <div className="mt-5 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: 'var(--text-muted)' }}>Update Status</p>
                       <div className="flex flex-wrap gap-1.5">
                         {['Processing', 'Shipped', 'Delivered', 'On Hold', 'Cancelled', 'Returned'].map(status => (
                           <button key={status} onClick={(e) => {
@@ -326,14 +329,14 @@ export default function Orders() {
                   </div>
 
                   {/* Product Card */}
-                  <div className="rounded-xl p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-xl p-5" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                    <div className="flex items-center gap-2 mb-4">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.15)' }}>
                         <svg className="w-4 h-4" style={{ color: '#a78bfa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                       </div>
                       <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Product</h3>
                     </div>
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                       {[
                         { label: 'Name', value: selectedOrder.product_name, bold: true },
                         { label: 'SKU', value: selectedOrder.product_sku, mono: true },
@@ -351,14 +354,14 @@ export default function Orders() {
                   </div>
 
                   {/* Financial Card */}
-                  <div className="rounded-xl p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-xl p-5" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                    <div className="flex items-center gap-2 mb-4">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.15)' }}>
                         <svg className="w-4 h-4" style={{ color: 'var(--success)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>
                       <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Financial</h3>
                     </div>
-                    <div className="space-y-2.5">
+                    <div className="space-y-0 rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
                       {[
                         { label: 'Price', value: `EGP ${(selectedOrder.total_price || 0).toLocaleString()}`, bold: true, color: 'var(--text-primary)' },
                         { label: 'Cost', value: `EGP ${(selectedOrder.cost || 0).toLocaleString()}`, color: 'var(--text-secondary)' },
@@ -367,7 +370,7 @@ export default function Orders() {
                         { label: 'Shipping', value: `EGP ${(selectedOrder.shipping_cost || 0).toLocaleString()}` },
                         { label: 'Discount', value: `EGP ${(selectedOrder.discount_amount || 0).toLocaleString()}` },
                       ].map((item, j) => (
-                        <div key={j} className="flex items-center justify-between">
+                        <div key={j} className="flex items-center justify-between px-3 py-2" style={j % 2 === 0 ? { background: 'rgba(0,0,0,0.015)' } : undefined}>
                           <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>{item.label}</span>
                           <span className={`text-[12px] ${item.bold ? 'font-bold' : 'font-medium'}`} style={{ color: item.color || 'var(--text-primary)' }}>{item.value}</span>
                         </div>
@@ -376,14 +379,14 @@ export default function Orders() {
                   </div>
 
                   {/* Details Card */}
-                  <div className="rounded-xl p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-xl p-5" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                    <div className="flex items-center gap-2 mb-4">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)' }}>
                         <svg className="w-4 h-4" style={{ color: 'var(--warning)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>
                       <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Details</h3>
                     </div>
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                       {[
                         { label: 'Payment', value: selectedOrder.payment_method },
                         { label: 'Referral', value: selectedOrder.referral_source },

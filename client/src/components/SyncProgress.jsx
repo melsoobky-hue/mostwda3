@@ -46,28 +46,29 @@ export default function SyncProgress({ source, onComplete }) {
   };
 
   return (
-    <div className="card anim-scale" style={{ padding: '16px 20px', borderColor: status === 'success' ? 'var(--success)' : status === 'failed' ? 'var(--danger)' : 'var(--border)' }}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {status === 'running' && <div className="w-2 h-2 rounded-full anim-pulse" style={{ background: 'var(--accent)' }}></div>}
-          {status === 'success' && <div className="w-2 h-2 rounded-full" style={{ background: 'var(--success)' }}></div>}
-          {status === 'failed' && <div className="w-2 h-2 rounded-full" style={{ background: 'var(--danger)' }}></div>}
+    <div className="card anim-scale" style={{ padding: '18px 22px', borderColor: status === 'success' ? 'var(--success)' : status === 'failed' ? 'var(--danger)' : 'var(--border)', boxShadow: 'var(--shadow-md)' }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          {status === 'running' && <div className="w-2.5 h-2.5 rounded-full anim-pulse" style={{ background: 'var(--accent)', boxShadow: '0 0 0 3px var(--accent-glow)' }}></div>}
+          {status === 'success' && <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--success)', boxShadow: '0 0 0 3px var(--success-bg)' }}></div>}
+          {status === 'failed' && <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--danger)', boxShadow: '0 0 0 3px var(--danger-bg)' }}></div>}
           <span className="text-xs font-semibold capitalize" style={{ color: 'var(--text-primary)' }}>{source}</span>
         </div>
         <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
           {status === 'running' ? `${Math.round(progress)}%` : status === 'success' ? 'Done' : 'Failed'}
         </span>
       </div>
-      <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
+      <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-input)' }}>
         <div
           className="h-full rounded-full transition-all duration-300"
           style={{
             width: `${progress}%`,
             background: colors[status].bar,
+            boxShadow: status === 'running' ? '0 0 10px var(--accent-glow)' : status === 'success' ? '0 0 10px var(--success-bg)' : '0 0 10px var(--danger-bg)',
           }}
         ></div>
       </div>
-      <p className="text-[10px] mt-2 font-medium" style={{ color: 'var(--text-muted)' }}>{message}</p>
+      <p className="text-[11px] mt-2.5 font-medium" style={{ color: 'var(--text-muted)' }}>{message}</p>
     </div>
   );
 }
