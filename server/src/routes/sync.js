@@ -1,11 +1,36 @@
 import { Router } from 'express';
-import { runAllScrapers, runSingleScraper, getSyncStatus, updateSchedulerInterval, getSchedulerInterval } from '../services/scheduler.js';
+import { runAllScrapers, runSingleScraper, getSyncStatus, updateSchedulerInterval, getSchedulerInterval, addSseClient, removeSseClient } from '../services/scheduler.js';
 import { getSyncLogs, getSetting, setSetting } from '../services/database.js';
 
 const router = Router();
 
 router.get('/status', (req, res) => {
   res.json(getSyncStatus());
+});
+
+// SSE stream — clients subscribe here for live sync progress events
+router.get('/stream', (req, res) => {
+  res.setHeader('Content-Type',  'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection',    'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Nginx proxy support
+  res.flushHeaders();
+
+  // Send current status immediately so the client can render without waiting
+  const status = getSyncStatus();
+  res.write(`event: init\ndata: ${JSON.stringify(status)}\n\n`);
+
+  // Heartbeat every 25 s to keep connection alive through proxies
+  const heartbeat = setInterval(() => {
+    try { res.write(': ping\n\n'); } catch (_) {}
+  }, 25000);
+
+  addSseClient(res);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    removeSseClient(res);
+  });
 });
 
 router.get('/interval', (req, res) => {

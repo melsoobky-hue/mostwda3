@@ -3,6 +3,26 @@ import { getAnalytics } from '../services/database.js';
 
 const router = Router();
 
+// Today's quick stats
+router.get('/today', (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const raw   = getAnalytics(today, today);
+    const s     = raw.summary || {};
+    res.json({
+      orders:   s.total_orders   || 0,
+      revenue:  s.total_revenue  || 0,
+      profit:   s.total_profit   || 0,
+      delivered: s.delivered_orders || 0,
+      delayed:   s.delayed_orders   || 0,
+      cancelled: s.cancelled_orders || 0,
+      date: today,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/', (req, res) => {
   try {
     let { dateFrom, dateTo, days } = req.query;
