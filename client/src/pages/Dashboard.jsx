@@ -31,40 +31,23 @@ function getStatusBadge(st) { return (STATUS_META[st] || { badge: 'badge-gray' }
 function getChannelMeta(ch) { return CHANNEL_META[ch] || { label: ch, color: '#94a3b8', bg: 'rgba(148,163,184,.12)', icon: '🔗' }; }
 
 /* ── KPI CARD ──────────────────────────────────────── */
-function KpiCard({ label, value, sub, icon, gradient, change, delay = 1 }) {
+function KpiCard({ label, value, sub, icon, change, delay = 1 }) {
   return (
-    <div className={`stat-card anim-fade-up stagger-${delay}`} style={{ overflow: 'hidden' }}>
-      {/* top accent bar */}
-      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: gradient }} />
-      {/* faint bg glow */}
-      <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 pointer-events-none"
-        style={{ background: gradient, filter: 'blur(32px)', transform: 'translate(30%, -30%)' }} />
-
-      <div className="flex items-start justify-between relative">
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-600 uppercase tracking-widest mb-2"
-            style={{ color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.08em' }}>
-            {label}
-          </p>
-          <p className="text-[26px] font-800 leading-tight anim-count truncate"
-            style={{ color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            {value}
-          </p>
+    <div className={`card anim-fade-up stagger-${delay}`} style={{ padding: '16px 20px' }}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
+          <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{value}</p>
           {change && (
-            <div className="flex items-center gap-1.5 mt-2">
-              <span className={`text-[11px] font-700 ${change.startsWith('+') ? '' : ''}`}
-                style={{ color: change.startsWith('+') ? 'var(--success)' : 'var(--danger)', fontWeight: 700 }}>
-                {change.startsWith('+') ? '↑' : '↓'} {change}
-              </span>
-              <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>vs last month</span>
-            </div>
+            <p className="text-[10px] mt-1" style={{ color: change.startsWith('+') ? 'var(--success)' : 'var(--danger)' }}>
+              {change} vs last month
+            </p>
           )}
-          {sub && <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-muted)' }}>{sub}</p>}
+          {sub && <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{sub}</p>}
         </div>
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ml-3"
-          style={{ background: gradient, boxShadow: '0 4px 16px rgba(0,0,0,.2)' }}>
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={icon} />
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-glow)' }}>
+          <svg className="w-4 h-4" style={{ color: 'var(--accent)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
           </svg>
         </div>
       </div>
@@ -73,21 +56,11 @@ function KpiCard({ label, value, sub, icon, gradient, change, delay = 1 }) {
 }
 
 /* ── MINI STAT ─────────────────────────────────────── */
-function MiniStat({ label, value, color, icon, delay = 1 }) {
+function MiniStat({ label, value, color, delay = 1 }) {
   return (
-    <div className={`card card-hover anim-fade-up stagger-${delay}`} style={{ padding: '14px 18px' }}>
-      <div className="flex items-center justify-between mb-1">
-        <p className="text-[10px] font-600 uppercase tracking-widest"
-          style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
-          {label}
-        </p>
-        {icon && (
-          <svg className="w-3.5 h-3.5" style={{ color }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-          </svg>
-        )}
-      </div>
-      <p className="text-[20px] font-800 leading-tight" style={{ color, fontWeight: 800 }}>{value}</p>
+    <div className={`card anim-fade-up stagger-${delay}`} style={{ padding: '12px 16px', textAlign: 'center' }}>
+      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <p className="text-lg font-bold" style={{ color: color || 'var(--text-primary)' }}>{value}</p>
     </div>
   );
 }
@@ -205,16 +178,16 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard delay={1} label={t('totalOrders')}  value={s.totalOrders || 0}
-          change={compareMode && prevAnalytics ? getChange(s.totalOrders, prevAnalytics.summary?.total_orders) : '+12%'} gradient="var(--gradient-2)"
+          change={compareMode && prevAnalytics ? getChange(s.totalOrders, prevAnalytics.summary?.total_orders) : '+12%'}
           icon="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         <KpiCard delay={2} label={t('totalRevenue')} value={`EGP ${(s.totalRevenue || 0).toLocaleString()}`}
-          change={compareMode && prevAnalytics ? getChange(s.totalRevenue, prevAnalytics.summary?.total_revenue) : '+8%'} gradient="var(--gradient-3)"
+          change={compareMode && prevAnalytics ? getChange(s.totalRevenue, prevAnalytics.summary?.total_revenue) : '+8%'}
           icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         <KpiCard delay={3} label={t('totalProfit')}  value={`EGP ${(s.totalProfit || 0).toLocaleString()}`}
-          change={compareMode && prevAnalytics ? getChange(s.totalProfit, prevAnalytics.summary?.total_profit) : '+15%'} gradient="var(--gradient-1)"
+          change={compareMode && prevAnalytics ? getChange(s.totalProfit, prevAnalytics.summary?.total_profit) : '+15%'}
           icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
         <KpiCard delay={4} label={t('avgMargin')}    value={`${(s.avgMargin || 0).toFixed(1)}%`}
-          change={compareMode && prevAnalytics ? getChange(s.avgMargin, prevAnalytics.summary?.avg_margin) : '+3%'} gradient="var(--gradient-4)"
+          change={compareMode && prevAnalytics ? getChange(s.avgMargin, prevAnalytics.summary?.avg_margin) : '+3%'}
           icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </div>
 
@@ -315,7 +288,7 @@ export default function Dashboard() {
               const maxRev = topProducts[0]?.revenue || 1;
               const pct    = Math.round((p.revenue / maxRev) * 100);
               return (
-                <div key={i} className="flex items-center gap-3">
+                  <div key={i} className="flex items-center gap-3">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-800 text-white flex-shrink-0"
                     style={{ background: COLORS[i % COLORS.length], fontWeight: 800 }}>
                     {i + 1}

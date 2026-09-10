@@ -1,27 +1,31 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
+import { useState, useEffect, createContext, useContext, useRef, useCallback, lazy, Suspense } from 'react';
 import { ToastProvider } from './components/Toast';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import ShortcutsHelp from './components/ShortcutsHelp';
 import GlobalSearch from './components/GlobalSearch';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Orders from './pages/Orders';
-import Products from './pages/Products';
-import Analytics from './pages/Analytics';
-import SyncPage from './pages/SyncPage';
-import Settings from './pages/Settings';
-import Customers from './pages/Customers';
-import PnL from './pages/PnL';
-import Inventory from './pages/Inventory';
-import Shipping from './pages/Shipping';
-import Rules from './pages/Rules';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Products = lazy(() => import('./pages/Products'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const SyncPage = lazy(() => import('./pages/SyncPage'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Customers = lazy(() => import('./pages/Customers'));
+const PnL = lazy(() => import('./pages/PnL'));
+const Inventory = lazy(() => import('./pages/Inventory'));
+const Shipping = lazy(() => import('./pages/Shipping'));
+const Rules = lazy(() => import('./pages/Rules'));
 
 const ThemeContext = createContext();
 export function useTheme() { return useContext(ThemeContext); }
 
 const THEMES = [
+  { id: 'sage', name: 'Sage', color: '#607b56' },
+  { id: 'heritage', name: 'Heritage', color: '#8a7041' },
+  { id: 'stone', name: 'Stone', color: '#718896' },
   { id: 'indigo', name: 'Indigo', color: '#6366f1' },
   { id: 'teal', name: 'Teal', color: '#14b8a6' },
   { id: 'emerald', name: 'Emerald', color: '#10b981' },
@@ -176,10 +180,10 @@ function Header({ onSearchClick }) {
   };
 
   return (
-    <header className="h-14 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-40 border-b" style={{ background: theme === 'dark' ? 'rgba(10,14,26,.8)' : 'rgba(255,255,255,.8)', backdropFilter: 'blur(12px)', borderColor: 'var(--border)' }}>
+    <header className="h-14 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-40 border-b" style={{ background: theme === 'dark' ? 'rgba(23,27,20,.88)' : 'rgba(255,251,244,.86)', backdropFilter: 'blur(14px)', borderColor: 'var(--border)' }}>
       <div className="flex items-center gap-3 pl-12 lg:pl-0">
         <div className="w-2 h-2 rounded-full anim-pulse" style={{ background: 'var(--success)' }}></div>
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('dashboard')}</h2>
+        <h2 className="text-sm font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--text-primary)' }}>{t('dashboard')}</h2>
       </div>
       <div className="flex items-center gap-1.5">
         <button onClick={onSearchClick} className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] transition-all hover:bg-[var(--bg-hover)]" style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
@@ -207,7 +211,7 @@ function Header({ onSearchClick }) {
 function Layout() {
   const { i18n } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [colorTheme, setColorThemeState] = useState(localStorage.getItem('colorTheme') || 'indigo');
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -275,19 +279,21 @@ function LayoutInner({ collapsed, setCollapsed, mobileOpen, setMobileOpen, isDes
       >
         <Header onSearchClick={() => setSearchOpen(true)} />
         <main className="p-4 lg:p-6">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/pnl" element={<PnL />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/shipping" element={<Shipping />} />
-            <Route path="/rules" element={<Rules />} />
-            <Route path="/sync" element={<SyncPage />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
+          <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center"><div className="text-center"><div className="w-10 h-10 rounded-full border-2 animate-spin mx-auto" style={{ borderColor: 'var(--border)', borderTopColor: 'var(--accent)' }} /><p className="text-sm mt-3" style={{ color: 'var(--text-muted)' }}>Loading workspace</p></div></div>}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/pnl" element={<PnL />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/shipping" element={<Shipping />} />
+              <Route path="/rules" element={<Rules />} />
+              <Route path="/sync" element={<SyncPage />} />
+              <Route path="/settings" element={<Settings />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
       <ShortcutsHelp open={showShortcuts} onClose={() => setShowShortcuts(false)} />
