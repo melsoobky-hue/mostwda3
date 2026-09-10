@@ -77,7 +77,8 @@ async function scrapeOrders(page) {
         const expectedDelivery = get(11);
         const status = get(12);
 
-        const mirrorInfo = parseMirrorInfo(title);
+        const sizeMatch = title.match(/(\d+)\s*[xX×]\s*(\d+)/);
+        const typeMatch = title.match(/(مرايا|mirror|ليد|LED|سبت|سامبا|touch|تاتش|مفرغة)/i);
 
         results.push({
           itemId,
@@ -91,9 +92,9 @@ async function scrapeOrders(page) {
           assignedDate,
           expectedDelivery,
           status,
-          mirrorType: mirrorInfo.type,
-          mirrorDimensions: mirrorInfo.dimensions,
-          mirrorSize: mirrorInfo.size,
+          mirrorType: typeMatch?.[1] || '',
+          mirrorDimensions: sizeMatch ? `${sizeMatch[1]}x${sizeMatch[2]}` : '',
+          mirrorSize: sizeMatch ? `${sizeMatch[1]}x${sizeMatch[2]}cm` : '',
         });
       });
       return results;
