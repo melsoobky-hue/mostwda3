@@ -168,9 +168,108 @@ function initSchema() {
     'CREATE INDEX IF NOT EXISTS idx_products_source ON products(source)',
     'CREATE INDEX IF NOT EXISTS idx_products_mirror_type ON products(mirror_type)',
     'CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)',
+    'CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date)',
+    'CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)',
+    'CREATE INDEX IF NOT EXISTS idx_inventory_sku ON inventory(sku)',
+    'CREATE INDEX IF NOT EXISTS idx_shipments_order ON shipments(order_id)',
+    'CREATE INDEX IF NOT EXISTS idx_rules_type ON rules(type)',
   ];
   for (const idx of indexes) {
     try { db.run(idx); } catch (_) {}
+  }
+
+  // ── New tables for v2 features ──────────────────────────────────────────────
+  db.run(`
+    CREATE TABLE IF NOT EXISTS expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      amount REAL DEFAULT 0,
+      date TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS inventory (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sku TEXT UNIQUE,
+      name TEXT DEFAULT '',
+      stock_quantity INTEGER DEFAULT 0,
+      low_stock_threshold INTEGER DEFAULT 5,
+      reorder_point INTEGER DEFAULT 10,
+      reorder_quantity INTEGER DEFAULT 20,
+      cost REAL DEFAULT 0,
+      last_restocked TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS auth (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pin TEXT NOT NULL,
+      name TEXT DEFAULT 'Admin',
+      role TEXT DEFAULT 'admin',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS shipments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER,
+      source TEXT DEFAULT '',
+      source_order_id TEXT DEFAULT '',
+      shipping_company TEXT DEFAULT '',
+      tracking_number TEXT DEFAULT '',
+      status TEXT DEFAULT '',
+      status_ar TEXT DEFAULT '',
+      pickup_date TEXT DEFAULT '',
+      delivery_date TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      raw_data TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS rules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT DEFAULT '',
+      type TEXT DEFAULT '',
+      condition_json TEXT DEFAULT '{}',
+      action_json TEXT DEFAULT '{}',
+      is_active INTEGER DEFAULT 1,
+      last_triggered TEXT DEFAULT '',
+      trigger_count INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS order_status_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER,
+      source TEXT DEFAULT '',
+      source_order_id TEXT DEFAULT '',
+      old_status TEXT DEFAULT '',
+      new_status TEXT DEFAULT '',
+      changed_by TEXT DEFAULT 'system',
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  // Insert default admin PIN if none exists
+  const authCount = execCount('SELECT COUNT(*) FROM auth');
+  if (authCount === 0) {
+    db.run("INSERT INTO auth (pin, name, role) VALUES ('1234', 'Admin', 'admin')");
   }
 }
 
@@ -597,4 +696,300 @@ export function setSetting(key, value) {
     db.run('INSERT INTO settings (key, value) VALUES (?, ?)', [key, value]);
   }
   saveDb();
+}
+
+// ─── Expenses ───────────────────────────────────────────────────────────────
+
+export function addExpense(expense) {
+  db.run(
+    'INSERT INTO expenses (category, description, amount, date, notes) VALUES (?,?,?,?,?)',
+    [expense.category, expense.description || '', expense.amount || 0, expense.date || '', expense.notes || '']
+  );
+  saveDb();
+  return 'inserted';
+}
+
+export function getExpenses(filters = {}) {
+  const conditions = ['1=1'];
+  const params = [];
+  if (filters.category) { conditions.push('category = ?'); params.push(filters.category); }
+  if (filters.dateFrom) { conditions.push('date >= ?'); params.push(filters.dateFrom); }
+  if (filters.dateTo) { conditions.push('date <= ?'); params.push(filters.dateTo); }
+  const where = conditions.join(' AND ');
+  return queryAll(`SELECT * FROM expenses WHERE ${where} ORDER BY date DESC, id DESC`, params);
+}
+
+export function deleteExpense(id) {
+  db.run('DELETE FROM expenses WHERE id = ?', [parseInt(id)]);
+  saveDb();
+}
+
+export function getExpensesSummary(dateFrom, dateTo) {
+  const cond = [];
+  const params = [];
+  if (dateFrom) { cond.push('date >= ?'); params.push(dateFrom); }
+  if (dateTo) { cond.push('date <= ?'); params.push(dateTo); }
+  const where = cond.length ? `WHERE ${cond.join(' AND ')}` : '';
+
+  const totalResult = db.exec(`SELECT COALESCE(SUM(amount),0) FROM expenses ${where}`, params);
+  const totalExpenses = (totalResult.length > 0 && totalResult[0].values.length > 0) ? totalResult[0].values[0][0] : 0;
+
+  const byCategory = queryAll(
+    `SELECT category, SUM(amount) as total, COUNT(*) as count FROM expenses ${where} GROUP BY category ORDER BY total DESC`,
+    params
+  );
+
+  return { totalExpenses, byCategory };
+}
+
+// ─── Inventory ──────────────────────────────────────────────────────────────
+
+export function upsertInventory(item) {
+  const existing = execCount('SELECT COUNT(*) FROM inventory WHERE sku = ?', [item.sku]);
+  if (existing > 0) {
+    db.run(
+      `UPDATE inventory SET name=?, stock_quantity=?, low_stock_threshold=?, reorder_point=?, reorder_quantity=?, cost=?, notes=?, updated_at=datetime('now') WHERE sku=?`,
+      [item.name || '', item.stock_quantity || 0, item.low_stock_threshold || 5, item.reorder_point || 10, item.reorder_quantity || 20, item.cost || 0, item.notes || '', item.sku]
+    );
+  } else {
+    db.run(
+      `INSERT INTO inventory (sku, name, stock_quantity, low_stock_threshold, reorder_point, reorder_quantity, cost, last_restocked, notes) VALUES (?,?,?,?,?,?,?,?,?)`,
+      [item.sku, item.name || '', item.stock_quantity || 0, item.low_stock_threshold || 5, item.reorder_point || 10, item.reorder_quantity || 20, item.cost || 0, item.last_restocked || '', item.notes || '']
+    );
+  }
+  saveDb();
+  return 'upserted';
+}
+
+export function getInventory(filters = {}) {
+  const conditions = ['1=1'];
+  const params = [];
+  if (filters.lowStock) { conditions.push('stock_quantity <= low_stock_threshold'); }
+  if (filters.search) {
+    conditions.push('(name LIKE ? OR sku LIKE ?)');
+    const s = `%${filters.search}%`;
+    params.push(s, s);
+  }
+  const where = conditions.join(' AND ');
+  return queryAll(`SELECT * FROM inventory WHERE ${where} ORDER BY name ASC`, params);
+}
+
+export function updateStock(sku, quantity, notes) {
+  db.run(
+    `UPDATE inventory SET stock_quantity = ?, last_restocked = datetime('now'), notes = ?, updated_at = datetime('now') WHERE sku = ?`,
+    [quantity, notes || '', sku]
+  );
+  saveDb();
+}
+
+export function getLowStockItems() {
+  return queryAll('SELECT * FROM inventory WHERE stock_quantity <= low_stock_threshold ORDER BY stock_quantity ASC');
+}
+
+// ─── Auth ───────────────────────────────────────────────────────────────────
+
+export function verifyPin(pin) {
+  const user = queryOne('SELECT * FROM auth WHERE pin = ? AND is_active = 1', [pin]);
+  return user || null;
+}
+
+export function changePin(oldPin, newPin, name) {
+  const user = verifyPin(oldPin);
+  if (!user) return null;
+  db.run('UPDATE auth SET pin = ?, name = COALESCE(?, name) WHERE id = ?', [newPin, name || null, user.id]);
+  saveDb();
+  return 'updated';
+}
+
+export function getAuthUsers() {
+  return queryAll('SELECT id, name, role, is_active, created_at FROM auth');
+}
+
+// ─── Shipments ──────────────────────────────────────────────────────────────
+
+export function addShipment(shipment) {
+  db.run(
+    `INSERT INTO shipments (order_id, source, source_order_id, shipping_company, tracking_number, status, status_ar, pickup_date, delivery_date, notes, raw_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    [shipment.order_id || null, shipment.source || '', shipment.source_order_id || '', shipment.shipping_company || '', shipment.tracking_number || '', shipment.status || '', shipment.status_ar || '', shipment.pickup_date || '', shipment.delivery_date || '', shipment.notes || '', shipment.raw_data ? JSON.stringify(shipment.raw_data) : '']
+  );
+  saveDb();
+  return 'inserted';
+}
+
+export function getShipments(filters = {}) {
+  const conditions = ['1=1'];
+  const params = [];
+  if (filters.order_id) { conditions.push('order_id = ?'); params.push(parseInt(filters.order_id)); }
+  if (filters.status) { conditions.push('status = ?'); params.push(filters.status); }
+  if (filters.company) { conditions.push('shipping_company = ?'); params.push(filters.company); }
+  const where = conditions.join(' AND ');
+  return queryAll(`SELECT * FROM shipments WHERE ${where} ORDER BY id DESC`, params);
+}
+
+export function updateShipment(id, updates) {
+  const fields = [];
+  const params = [];
+  for (const [key, val] of Object.entries(updates)) {
+    if (['status', 'status_ar', 'tracking_number', 'delivery_date', 'notes'].includes(key)) {
+      fields.push(`${key} = ?`);
+      params.push(val);
+    }
+  }
+  if (fields.length === 0) return 'no changes';
+  fields.push("updated_at = datetime('now')");
+  params.push(parseInt(id));
+  db.run(`UPDATE shipments SET ${fields.join(', ')} WHERE id = ?`, params);
+  saveDb();
+  return 'updated';
+}
+
+// ─── Order Status History ───────────────────────────────────────────────────
+
+export function updateOrderStatus(source, sourceOrderId, newStatus, changedBy, notes) {
+  const order = queryOne('SELECT id, status FROM orders WHERE source = ? AND source_order_id = ?', [source, sourceOrderId]);
+  if (!order) return null;
+
+  const oldStatus = order.status || '';
+  db.run('UPDATE orders SET status = ?, updated_at = datetime(\'now\') WHERE id = ?', [newStatus, order.id]);
+  db.run(
+    'INSERT INTO order_status_history (order_id, source, source_order_id, old_status, new_status, changed_by, notes) VALUES (?,?,?,?,?,?,?)',
+    [order.id, source, sourceOrderId, oldStatus, newStatus, changedBy || 'user', notes || '']
+  );
+
+  // Update shipment status if exists
+  if (newStatus === 'Shipped') {
+    db.run("UPDATE shipments SET status = 'In Transit', status_ar = 'في الطريق' WHERE order_id = ?", [order.id]);
+  } else if (newStatus === 'Delivered') {
+    db.run("UPDATE shipments SET status = 'Delivered', status_ar = 'تم التوصيل', delivery_date = datetime('now') WHERE order_id = ?", [order.id]);
+  }
+
+  saveDb();
+  return { oldStatus, newStatus, orderId: order.id };
+}
+
+export function getOrderStatusHistory(orderId) {
+  return queryAll('SELECT * FROM order_status_history WHERE order_id = ? ORDER BY id DESC', [parseInt(orderId)]);
+}
+
+// ─── Rules ──────────────────────────────────────────────────────────────────
+
+export function addRule(rule) {
+  db.run(
+    `INSERT INTO rules (name, type, condition_json, action_json, is_active) VALUES (?,?,?,?,?)`,
+    [rule.name || '', rule.type || '', JSON.stringify(rule.condition || {}), JSON.stringify(rule.action || {}), rule.is_active != null ? rule.is_active : 1]
+  );
+  saveDb();
+  return 'inserted';
+}
+
+export function getRules() {
+  return queryAll('SELECT * FROM rules ORDER BY id DESC');
+}
+
+export function updateRule(id, updates) {
+  const fields = [];
+  const params = [];
+  if (updates.name != null) { fields.push('name = ?'); params.push(updates.name); }
+  if (updates.is_active != null) { fields.push('is_active = ?'); params.push(updates.is_active ? 1 : 0); }
+  if (updates.condition_json != null) { fields.push('condition_json = ?'); params.push(updates.condition_json); }
+  if (updates.action_json != null) { fields.push('action_json = ?'); params.push(updates.action_json); }
+  if (fields.length === 0) return 'no changes';
+  params.push(parseInt(id));
+  db.run(`UPDATE rules SET ${fields.join(', ')} WHERE id = ?`, params);
+  saveDb();
+  return 'updated';
+}
+
+export function deleteRule(id) {
+  db.run('DELETE FROM rules WHERE id = ?', [parseInt(id)]);
+  saveDb();
+}
+
+export function getActiveRules() {
+  return queryAll("SELECT * FROM rules WHERE is_active = 1").map(r => ({
+    ...r,
+    condition: JSON.parse(r.condition_json || '{}'),
+    action: JSON.parse(r.action_json || '{}'),
+  }));
+}
+
+// ─── P&L Report ────────────────────────────────────────────────────────────
+
+export function getProfitLoss(dateFrom, dateTo) {
+  const orderCond = [];
+  const params = [];
+  if (dateFrom) { orderCond.push('order_date >= ?'); params.push(dateFrom); }
+  if (dateTo) { orderCond.push('order_date <= ?'); params.push(dateTo); }
+  const orderWhere = orderCond.length ? `AND ${orderCond.join(' AND ')}` : '';
+
+  // Order revenue
+  const orderResult = db.exec(`
+    SELECT
+      COALESCE(SUM(total_price),0) as revenue,
+      COALESCE(SUM(cost),0) as cogs,
+      COALESCE(SUM(profit),0) as gross_profit,
+      COALESCE(SUM(shipping_cost),0) as shipping_cost,
+      COALESCE(SUM(discount_amount),0) as discounts,
+      COUNT(*) as total_orders,
+      SUM(CASE WHEN status = 'Delivered' THEN 1 ELSE 0 END) as delivered,
+      SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END) as cancelled
+    FROM orders WHERE 1=1 ${orderWhere}
+  `, params);
+
+  let orders = {};
+  if (orderResult.length > 0 && orderResult[0].values.length > 0) {
+    const cols = orderResult[0].columns;
+    const vals = orderResult[0].values[0];
+    cols.forEach((c, i) => { orders[c] = vals[i] ?? 0; });
+  }
+
+  // Expenses
+  const expCond = [];
+  const expParams = [];
+  if (dateFrom) { expCond.push('date >= ?'); expParams.push(dateFrom); }
+  if (dateTo) { expCond.push('date <= ?'); expParams.push(dateTo); }
+  const expWhere = expCond.length ? `WHERE ${expCond.join(' AND ')}` : '';
+
+  const totalExpResult = db.exec(`SELECT COALESCE(SUM(amount),0) FROM expenses ${expWhere}`, expParams);
+  const totalExpenses = (totalExpResult.length > 0 && totalExpResult[0].values.length > 0) ? totalExpResult[0].values[0][0] : 0;
+
+  const expensesByCategory = queryAll(
+    `SELECT category, SUM(amount) as total FROM expenses ${expWhere} GROUP BY category ORDER BY total DESC`,
+    expParams
+  );
+
+  // Monthly breakdown
+  const monthly = queryAll(`
+    SELECT strftime('%Y-%m', order_date) as month,
+      COALESCE(SUM(total_price),0) as revenue,
+      COALESCE(SUM(cost),0) as cogs,
+      COALESCE(SUM(profit),0) as profit,
+      COUNT(*) as orders
+    FROM orders WHERE 1=1 ${orderWhere}
+    GROUP BY month ORDER BY month ASC
+  `, params);
+
+  const revenue = orders.revenue || 0;
+  const cogs = orders.cogs || 0;
+  const grossProfit = orders.gross_profit || 0;
+  const netProfit = grossProfit - totalExpenses;
+  const netMargin = revenue > 0 ? ((netProfit / revenue) * 100).toFixed(1) : 0;
+
+  return {
+    summary: {
+      revenue,
+      cogs,
+      grossProfit,
+      totalExpenses,
+      netProfit,
+      netMargin: parseFloat(netMargin),
+      shippingCost: orders.shipping_cost || 0,
+      discounts: orders.discounts || 0,
+      totalOrders: orders.total_orders || 0,
+      delivered: orders.delivered || 0,
+      cancelled: orders.cancelled || 0,
+    },
+    expensesByCategory,
+    monthly,
+  };
 }

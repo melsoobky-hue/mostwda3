@@ -11,6 +11,13 @@ import exportRouter from './routes/export.js';
 import customersRouter from './routes/customers.js';
 import alertsRouter from './routes/alerts.js';
 import bulkRouter from './routes/bulk.js';
+import expensesRouter from './routes/expenses.js';
+import inventoryRouter from './routes/inventory.js';
+import authRouter from './routes/auth.js';
+import shipmentsRouter from './routes/shipments.js';
+import orderStatusRouter from './routes/order-status.js';
+import rulesRouter from './routes/rules.js';
+import pnlRouter from './routes/pnl.js';
 import { startScheduler } from './services/scheduler.js';
 import { getDb } from './services/database.js';
 
@@ -30,6 +37,13 @@ app.use('/api/export', exportRouter);
 app.use('/api/customers', customersRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/bulk', bulkRouter);
+app.use('/api/expenses', expensesRouter);
+app.use('/api/inventory', inventoryRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/shipments', shipmentsRouter);
+app.use('/api/order-status', orderStatusRouter);
+app.use('/api/rules', rulesRouter);
+app.use('/api/pnl', pnlRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
