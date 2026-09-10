@@ -744,6 +744,29 @@ export function getExpensesSummary(dateFrom, dateTo) {
 
 // ─── Inventory ──────────────────────────────────────────────────────────────
 
+export function syncInventoryFromProducts() {
+  const products = queryAll('SELECT sku, name, stock_quantity, stock_status, cost, low_stock_threshold FROM products WHERE sku IS NOT NULL AND sku != ""');
+  let synced = 0;
+  for (const p of products) {
+    const existing = execCount('SELECT COUNT(*) FROM inventory WHERE sku = ?', [p.sku]);
+    if (existing === 0) {
+      db.run(
+        `INSERT INTO inventory (sku, name, stock_quantity, low_stock_threshold, reorder_point, reorder_quantity, cost) VALUES (?,?,?,?,?,?,?)`,
+        [p.sku, p.name || '', p.stock_quantity || 0, p.low_stock_threshold || 5, Math.max(5, Math.floor((p.stock_quantity || 0) * 0.3)), Math.max(10, Math.floor((p.stock_quantity || 0) * 0.5)), p.cost || 0]
+      );
+      synced++;
+    } else {
+      // Update stock from synced products
+      db.run(
+        `UPDATE inventory SET stock_quantity = ?, cost = CASE WHEN ? > 0 THEN ? ELSE cost END, updated_at = datetime('now') WHERE sku = ?`,
+        [p.stock_quantity || 0, p.cost || 0, p.cost || 0, p.sku]
+      );
+    }
+  }
+  saveDb();
+  return { total: products.length, synced };
+}
+
 export function upsertInventory(item) {
   const existing = execCount('SELECT COUNT(*) FROM inventory WHERE sku = ?', [item.sku]);
   if (existing > 0) {

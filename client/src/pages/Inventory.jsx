@@ -7,6 +7,7 @@ export default function Inventory() {
   const { toast } = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [search, setSearch] = useState('');
   const [showLowOnly, setShowLowOnly] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -25,6 +26,16 @@ export default function Inventory() {
     }).catch(() => setLoading(false));
   };
 
+  const syncFromProducts = () => {
+    setSyncing(true);
+    fetch('/api/inventory/sync', { method: 'POST' }).then(r => r.json()).then(d => {
+      toast.success(`Synced ${d.synced || 0} new products from database`);
+      setSyncing(false);
+      fetchItems();
+    }).catch(() => { toast.error('Sync failed'); setSyncing(false); });
+  };
+
+  useEffect(() => { syncFromProducts(); }, []);
   useEffect(() => { fetchItems(); }, [search, showLowOnly]);
 
   const handleAdd = (e) => {
@@ -62,10 +73,16 @@ export default function Inventory() {
           <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Inventory</h1>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{items.length} items {lowStockCount > 0 && <span style={{ color: 'var(--danger)' }}>· {lowStockCount} low stock</span>}</p>
         </div>
-        <button onClick={() => setShowAddModal(true)} className="btn btn-primary btn-sm">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          Add Item
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={syncFromProducts} disabled={syncing} className="btn btn-secondary btn-sm">
+            <svg className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            {syncing ? 'Syncing...' : 'Sync from Products'}
+          </button>
+          <button onClick={() => setShowAddModal(true)} className="btn btn-primary btn-sm">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            Add Item
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

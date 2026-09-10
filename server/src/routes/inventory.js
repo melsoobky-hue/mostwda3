@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { upsertInventory, getInventory, updateStock, getLowStockItems } from '../services/database.js';
+import { upsertInventory, getInventory, updateStock, getLowStockItems, syncInventoryFromProducts } from '../services/database.js';
 
 const router = Router();
 
@@ -16,6 +16,11 @@ router.get('/low-stock', (req, res) => {
 router.post('/', (req, res) => {
   const result = upsertInventory(req.body);
   res.json({ status: result });
+});
+
+router.post('/sync', (req, res) => {
+  const result = syncInventoryFromProducts();
+  res.json({ status: 'synced', ...result });
 });
 
 router.put('/stock', (req, res) => {
