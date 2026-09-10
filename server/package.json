@@ -1,0 +1,19 @@
+{
+  "name": "mirrors-dashboard-server",
+  "version": "1.0.0",
+  "description": "Backend server for mirrors company dashboard",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.0",
+    "node-cron": "^3.0.3",
+    "playwright": "^1.49.0",
+    "sql.js": "^1.11.0"
+  }
+}
