@@ -1,6 +1,12 @@
 import { Router } from 'express';
-import { runAllScrapers, runSingleScraper, getSyncStatus, updateSchedulerInterval, getSchedulerInterval, addSseClient, removeSseClient } from '../services/scheduler.js';
+import { runAllScrapers, runSingleScraper, getSyncStatus, updateSchedulerInterval, getSchedulerInterval, addSseClient, removeSseClient, broadcastProgress } from '../services/scheduler.js';
 import { getSyncLogs, getSetting, setSetting } from '../services/database.js';
+import { loginChichomzInteractive } from '../scrapers/chichomz.js';
+import { loginRaneenInteractive } from '../scrapers/raneen.js';
+import { existsSync, unlinkSync } from 'fs';
+import { join } from 'path';
+
+const COOKIES_DIR = join(process.cwd(), 'cookies');
 
 const router = Router();
 
@@ -103,24 +109,28 @@ router.get('/profiles', (req, res) => {
   }
 });
 
+// ── Credential management ──────────────────────────────────────────────────
+
 router.get('/credentials', (req, res) => {
   res.json({
     mostwda3: {
       username: getSetting('mostwda3_username') || '',
-      hasPassword: !!getSetting('mostwda3_password')
+      hasPassword: !!getSetting('mostwda3_password'),
     },
     chichomz: {
       email: getSetting('chichomz_email') || '',
-      hasPassword: !!getSetting('chichomz_password')
+      hasPassword: !!getSetting('chichomz_password'),
+      hasCookies: existsSync(join(COOKIES_DIR, 'chichomz.json')),
     },
     raneen: {
       email: getSetting('raneen_email') || '',
-      hasPassword: !!getSetting('raneen_password')
+      hasPassword: !!getSetting('raneen_password'),
+      hasCookies: existsSync(join(COOKIES_DIR, 'raneen.json')),
     },
     saraydecore: {
       username: getSetting('saraydecore_username') || '',
-      hasPassword: !!getSetting('saraydecore_password')
-    }
+      hasPassword: !!getSetting('saraydecore_password'),
+    },
   });
 });
 
@@ -131,10 +141,10 @@ router.post('/credentials', (req, res) => {
       if (username !== undefined) setSetting('mostwda3_username', username);
       if (password !== undefined) setSetting('mostwda3_password', password);
     } else if (source === 'chichomz') {
-      if (email !== undefined) setSetting('chichomz_email', email);
+      if (email    !== undefined) setSetting('chichomz_email',    email);
       if (password !== undefined) setSetting('chichomz_password', password);
     } else if (source === 'raneen') {
-      if (email !== undefined) setSetting('raneen_email', email);
+      if (email    !== undefined) setSetting('raneen_email',    email);
       if (password !== undefined) setSetting('raneen_password', password);
     } else if (source === 'saraydecore') {
       if (username !== undefined) setSetting('saraydecore_username', username);
@@ -144,6 +154,68 @@ router.post('/credentials', (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Clear saved cookies for a browser-scraped source
+router.delete('/cookies/:source', (req, res) => {
+  const source = req.params.source;
+  if (!['chichomz', 'raneen'].includes(source)) {
+    return res.status(400).json({ error: 'Only chichomz and raneen have saved sessions' });
+  }
+  try {
+    const p = join(COOKIES_DIR, `${source}.json`);
+    if (existsSync(p)) unlinkSync(p);
+    res.json({ success: true, message: `Session cleared for ${source}` });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Interactive browser login (opens visible browser window on server) ─────
+
+// Track active interactive login sessions so UI can poll progress
+const loginSessions = {};
+
+router.post('/login/:source', async (req, res) => {
+  const source = req.params.source;
+  if (!['chichomz', 'raneen'].includes(source)) {
+    return res.status(400).json({ error: 'Only chichomz and raneen support browser login' });
+  }
+
+  // Already running?
+  if (loginSessions[source]?.running) {
+    return res.json({ already_running: true, logs: loginSessions[source].logs });
+  }
+
+  const session = { running: true, logs: [], success: false, error: null };
+  loginSessions[source] = session;
+
+  const onProgress = (msg) => {
+    session.logs.push({ time: new Date().toISOString(), msg });
+    // Also broadcast over SSE so the live-events feed picks it up
+    broadcastProgress(source, msg);
+  };
+
+  // Fire-and-forget — client polls /login/:source/status
+  const loginFn = source === 'chichomz' ? loginChichomzInteractive : loginRaneenInteractive;
+  loginFn(onProgress)
+    .then(() => { session.running = false; session.success = true; })
+    .catch((e) => { session.running = false; session.error = e.message; onProgress(`Error: ${e.message}`); });
+
+  res.json({ started: true });
+});
+
+router.get('/login/:source/status', (req, res) => {
+  const source = req.params.source;
+  const session = loginSessions[source];
+  if (!session) return res.json({ idle: true });
+  res.json({
+    running: session.running,
+    success: session.success,
+    error:   session.error,
+    logs:    session.logs,
+    hasCookies: existsSync(join(COOKIES_DIR, `${source}.json`)),
+  });
 });
 
 export default router;

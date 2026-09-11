@@ -38,6 +38,16 @@ function broadcast(event, data) {
   }
 }
 
+/** Expose a lightweight progress broadcast for non-scraper callers (e.g. interactive login) */
+export function broadcastProgress(source, message) {
+  broadcast('source_update', {
+    source,
+    state: 'running',
+    message,
+    startedAt: new Date().toISOString(),
+  });
+}
+
 /* ── Interval helpers ──────────────────────────────────────────────────── */
 function getIntervalMinutes() {
   const val = getSetting('sync_interval_minutes');
@@ -109,6 +119,7 @@ async function runSource(name, fn, auto = true, needsLogin = false) {
 
   try {
     const result = await withRetry(() => fn(), 3, 2000);
+    const durationMs = Date.now() - startTs;
     const durationMs = Date.now() - startTs;
     const synced = (result?.orders || 0) + (result?.products || 0);
 

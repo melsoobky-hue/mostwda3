@@ -28,6 +28,7 @@ import creditNotesRouter from './routes/credit-notes.js';
 import paymentsRouter from './routes/payments.js';
 import salesRouter from './routes/sales.js';
 import productsErpRouter from './routes/products-erp.js';
+import receiptRouter from './routes/receipt.js';
 import shipmentsRouter from './routes/shipments.js';
 
 // ── New ERP routes ───────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ app.use('/api/erp/credit-notes', creditNotesRouter);
 app.use('/api/erp/payments', paymentsRouter);
 app.use('/api/erp/sales', salesRouter);
 app.use('/api/erp/products', productsErpRouter);
+app.use('/api/receipt', receiptRouter);
 app.use('/api/shipments', shipmentsRouter);
 
 // ── New ERP routes ───────────────────────────────────────────────────────────

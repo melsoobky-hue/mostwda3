@@ -1,20 +1,20 @@
 [
   {
     "name": "XSRF-TOKEN",
-    "value": "eyJpdiI6Ik1oeXVheVhIS3lEbEpCenlHU2Mvb0E9PSIsInZhbHVlIjoiQVIwOFBjWUxqNTFXR0ZiYTlucHB5Q240L0JXQkFOQ0lBMU5mU2pXR0NJT20rNCt0TDVWU3ZOR1YxYXJCa1hBWUdjTmlGTGExSHR1OGpZL0tsc0t3MXd3SVVUR0ZXbXVHL25iY29rL2NaS0x6dEs5WGVoN01hZ1Z2YUxBSWdRam8iLCJtYWMiOiIzMDRlZDlkMTRkMjExOGFiNjhmYTAzOTcyZWQ0YWFhYzk0NGFmNzEwYjk5YmY4NWE1NmMyYjU2NDU3MDNlNDc1IiwidGFnIjoiIn0%3D",
+    "value": "eyJpdiI6IlhicXVHNi83eWdpakhKbmRFQ0ZsaEE9PSIsInZhbHVlIjoidjhFa3FNUStwN281eUNxT3NFSGRPQWZiRkJCWXpXeWVqSnhIMGRsNUVjNm5rMWQydTBjU2psd3lPUUhXcVErQW0vak5KSTZZNVpVMno3d2RhTzRybERWTzhTMmI2SDRpZ2k3elRBdkkxNFpyR1V1eklVbkJiZmgwd0M0NzhKNTAiLCJtYWMiOiJiNTU3NmJkNWM0ZGI0ODY3NDFlNjQ4N2I2MzY2OWVkMzAzYmE5N2U3OGM3YWZhZjhiMzliZWUyYjllNzQwZjkxIiwidGFnIjoiIn0%3D",
     "domain": "new.vendorschichomz.com",
     "path": "/",
-    "expires": 1789091835.828634,
+    "expires": 1789092256.151166,
     "httpOnly": false,
     "secure": true,
     "sameSite": "Lax"
   },
   {
     "name": "chichomz_session",
-    "value": "eyJpdiI6IlIvTHVrTlhnYlVDMHRGcW16ak80Mnc9PSIsInZhbHVlIjoiQld0eTdzOEZCOGZsQ0JGdE12eFBzejd4R3RLaGhqOW1wQStqMmdGdllqQjRjbGw4enpXeUdBeHFFWWZVSFRKeWxuc3VYbXBTWFRROUcxOGM0c3pBZUpHYStPaFoxd2dSNW5ZU2VVTkdDanh6Zkg0VXBlSTlWd2tyK3N0ZzM5Z0giLCJtYWMiOiJiNGE5Mzk4NTI3NzFlODFhOGExNmZiNGYwZjQ1NzE5ZjU1MGIyOWNmYTI3YjE4NjViMWZhZWFhZjU1YzIwNzM4IiwidGFnIjoiIn0%3D",
+    "value": "eyJpdiI6Ii9iaHRlS3g5K3NzN3VIaEJobE41S0E9PSIsInZhbHVlIjoidEtKN1NQRWY3cm5JaVhNWlRUV3o1a3pXYTd6bmRud1hDREZkR2Yzc3NTSnZWNjEvRmNrTWhsdWI1aC83dnF4NDF5dGlCMmlDU1pGMUxiOHozTEtER1hnVkE4cXBPZkV4NFFzNUJaUzZtT2RjTTVCWUpQSGNrRFM1S0ZjOVE2YWMiLCJtYWMiOiJlNzE3ZDZhM2ZhMzdhODVjYTlhZDMxM2VmOWNkMGFhZWRjYjYyODhiNjIxZjUyZGI5ZGViNWY1ZmUyMGUxOTNkIiwidGFnIjoiIn0%3D",
     "domain": "new.vendorschichomz.com",
     "path": "/",
-    "expires": 1789091835.829195,
+    "expires": 1789092256.151377,
     "httpOnly": true,
     "secure": true,
     "sameSite": "Lax"
