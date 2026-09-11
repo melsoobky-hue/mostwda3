@@ -240,6 +240,18 @@ export default function SyncPage() {
       refreshLogs();
     });
 
+    // Scraper progress lines (streamed from chichomz / raneen during scrape)
+    es.addEventListener('scraper_log', e => {
+      const data = JSON.parse(e.data);
+      setLiveEvents(prev => [{
+        type: 'log',
+        source: data.source,
+        message: `[${data.source}] ${data.msg}`,
+        time: data.time || new Date().toISOString(),
+        id: Date.now() + Math.random(),
+      }, ...prev.slice(0, 99)]);
+    });
+
     return () => es.close();
   }, [refreshStatus, refreshLogs]);
 

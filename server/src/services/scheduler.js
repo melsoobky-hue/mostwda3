@@ -105,21 +105,34 @@ function persistSourceStatus(src) {
 /* ── Run one source ──────────────────────────────────────────────────────── */
 async function runSource(name, fn, auto = true, needsLogin = false) {
   if (auto && needsLogin && !hasCookies(name)) {
-    syncStatus[name].state = 'skipped';
-    broadcast('source_update', { source: name, state: 'skipped', message: 'No saved session' });
-    return { skipped: true };
+    // Check if credentials are available — if so, don't skip, let scraper auto-login
+    const { getSetting } = await import('./database.js');
+    const hasCreds =
+      name === 'chichomz' ? !!(getSetting('chichomz_email') && getSetting('chichomz_password')) :
+      name === 'raneen'   ? !!(getSetting('raneen_email')   && getSetting('raneen_password'))   :
+      false;
+
+    if (!hasCreds) {
+      syncStatus[name].state = 'skipped';
+      broadcast('source_update', { source: name, state: 'skipped', message: 'No saved session or credentials' });
+      return { skipped: true };
+    }
   }
 
-  const startTs = Date.now();
+  const startTs  = Date.now();
   const startIso = new Date().toISOString();
-  syncStatus[name].state  = 'running';
+  syncStatus[name].state   = 'running';
   syncStatus[name].lastRun = startIso;
 
   broadcast('source_update', { source: name, state: 'running', startedAt: startIso });
 
+  // onProgress callback — streams log lines over SSE as live events
+  const onProgress = (msg) => {
+    broadcast('scraper_log', { source: name, msg, time: new Date().toISOString() });
+  };
+
   try {
-    const result = await withRetry(() => fn(), 3, 2000);
-    const durationMs = Date.now() - startTs;
+    const result = await withRetry(() => fn(onProgress), 3, 2000);
     const durationMs = Date.now() - startTs;
     const synced = (result?.orders || 0) + (result?.products || 0);
 
