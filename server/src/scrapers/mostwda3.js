@@ -9,7 +9,7 @@ export async function scrapeMostwda3(credentials) {
   const { username, password } = credentials;
   console.log('[Mostwda3] Starting scrape...');
 
-  const context = await launchBrowser(true);
+  const context = await launchBrowser('mostwda3', true);
   const page = await context.newPage();
 
   try {

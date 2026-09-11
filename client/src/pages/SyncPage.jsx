@@ -478,6 +478,276 @@ export default function SyncPage() {
         ))}
       </div>
 
+      {/* ── Browser-scraped credentials panel ────────── */}
+      <div className="card anim-fade-up" style={{ padding: 0, overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{
+          padding: '14px 20px', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 3, height: 14, borderRadius: 2, background: 'var(--accent)' }} />
+            <span className="section-title">Browser-Scraped Sources</span>
+            <span className="badge badge-yellow" style={{ fontSize: 10 }}>Chichomz &amp; Raneen</span>
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            Credentials are stored on the server and used for headless auto-login
+          </p>
+        </div>
+
+        {/* Two-column layout — one card per source */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+          {[
+            { key: 'chichomz', name: 'Chichomz', icon: '🛒', url: 'vendorschichomz.com' },
+            { key: 'raneen',   name: 'Raneen',   icon: '📦', url: 'raneen.com'           },
+          ].map((src, idx) => {
+            const c   = creds[src.key] || {};
+            const ls  = loginStatus[src.key] || {};
+            const hasSession  = c.hasCookies;
+            const hasPassword = c.hasPassword;
+            const sessionOk   = hasSession && !ls.error;
+
+            return (
+              <div key={src.key} style={{
+                padding: '20px 24px',
+                borderRight: idx === 0 ? '1px solid var(--border)' : 'none',
+              }}>
+                {/* Source header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <span style={{ fontSize: 22 }}>{src.icon}</span>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{src.name}</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>{src.url}</p>
+                  </div>
+
+                  {/* Session status badge */}
+                  <span style={{ marginLeft: 'auto' }} className={`badge ${
+                    ls.running         ? 'badge-yellow' :
+                    ls.error           ? 'badge-red'    :
+                    sessionOk          ? 'badge-green'  :
+                    hasPassword        ? 'badge-blue'   :
+                                        'badge-gray'
+                  }`}>
+                    {ls.running         ? '⟳ Logging in…' :
+                     ls.error           ? '✗ Login failed' :
+                     sessionOk          ? '✓ Session saved' :
+                     hasPassword        ? '⚙ Credentials set' :
+                                         '— No credentials'}
+                  </span>
+                </div>
+
+                {/* Stored email display */}
+                <div style={{
+                  padding: '10px 14px', borderRadius: 10, marginBottom: 12,
+                  background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  <div>
+                    <p style={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 2 }}>
+                      Email / Username
+                    </p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: c.email ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                      {c.email || 'Not set'}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 2 }}>
+                      Password
+                    </p>
+                    <p style={{ fontSize: 12, color: hasPassword ? 'var(--success)' : 'var(--text-muted)' }}>
+                      {hasPassword ? '••••••••' : 'Not set'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Login log (if active / recent) */}
+                {ls.logs && ls.logs.length > 0 && (
+                  <div style={{
+                    padding: '8px 12px', borderRadius: 8, marginBottom: 12,
+                    background: ls.error ? 'var(--danger-bg)' : 'var(--bg-secondary)',
+                    border: `1px solid ${ls.error ? 'rgba(192,57,43,.2)' : 'var(--border)'}`,
+                    maxHeight: 110, overflowY: 'auto',
+                  }}>
+                    {ls.logs.slice(-6).map((l, i) => (
+                      <p key={i} style={{ fontSize: 10.5, color: 'var(--text-secondary)',
+                        lineHeight: 1.5, fontFamily: 'monospace' }}>
+                        {l.msg}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {/* Edit credentials */}
+                  <button
+                    onClick={() => {
+                      setCredEdit(src.key);
+                      setCredForm({ email: c.email || '', password: '' });
+                    }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ flex: 1 }}
+                  >
+                    <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a4 4 0 01-1.414.828l-3 1 1-3a4 4 0 01.828-1.414z"/>
+                    </svg>
+                    {c.email ? 'Edit Credentials' : 'Set Credentials'}
+                  </button>
+
+                  {/* Browser login — for MFA / captcha */}
+                  <button
+                    onClick={() => startBrowserLogin(src.key)}
+                    disabled={ls.running}
+                    className="btn btn-secondary btn-sm"
+                    style={{ flex: 1 }}
+                    title="Opens a visible browser window on the server machine for interactive login"
+                  >
+                    {ls.running ? (
+                      <>
+                        <svg style={{ width: 12, height: 12, animation: 'spin .9s linear infinite' }}
+                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9"/>
+                        </svg>
+                        Logging in…
+                      </>
+                    ) : (
+                      <>
+                        <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        Login via Browser
+                      </>
+                    )}
+                  </button>
+
+                  {/* Clear session */}
+                  {hasSession && (
+                    <button
+                      onClick={() => clearSession(src.key)}
+                      className="btn btn-sm"
+                      style={{
+                        background: 'var(--danger-bg)',
+                        color: 'var(--danger)',
+                        border: '1px solid rgba(192,57,43,.25)',
+                      }}
+                      title="Delete saved cookies — next sync will re-login automatically"
+                    >
+                      <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                      Clear Session
+                    </button>
+                  )}
+                </div>
+
+                {/* How it works note */}
+                <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.5 }}>
+                  {sessionOk
+                    ? `✓ Saved session will be used. Auto re-login if it expires.`
+                    : hasPassword
+                    ? `Credentials saved. Will auto-login headlessly on next sync.`
+                    : `Set credentials so syncs run automatically without manual steps.`}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Credential edit modal ─────────────────────── */}
+      {credEdit && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setCredEdit(null)}>
+          <div style={{
+            background: 'var(--bg-card)', borderRadius: 18, padding: 28,
+            width: '100%', maxWidth: 400,
+            border: '1px solid var(--border)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <span style={{ fontSize: 20 }}>
+                {credEdit === 'chichomz' ? '🛒' : '📦'}
+              </span>
+              <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+                {credEdit === 'chichomz' ? 'Chichomz' : 'Raneen'} Credentials
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase',
+                  letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
+                  Email / Username
+                </label>
+                <input
+                  type="email"
+                  value={credForm.email}
+                  onChange={e => setCredForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="your@email.com"
+                  className="input-field"
+                  style={{ fontSize: 13 }}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase',
+                  letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
+                  Password
+                  <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: 'var(--text-muted)' }}>
+                    (leave blank to keep current)
+                  </span>
+                </label>
+                <input
+                  type="password"
+                  value={credForm.password}
+                  onChange={e => setCredForm(f => ({ ...f, password: e.target.value }))}
+                  placeholder="••••••••"
+                  className="input-field"
+                  style={{ fontSize: 13 }}
+                />
+              </div>
+            </div>
+
+            <div style={{
+              padding: '10px 14px', borderRadius: 10, marginTop: 14,
+              background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+            }}>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                🔒 Credentials are stored on the server only and never sent to the browser.
+                They are used for headless auto-login during scheduled syncs.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <button
+                onClick={() => setCredEdit(null)}
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveCred}
+                disabled={savingCred || !credForm.email}
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+              >
+                {savingCred ? 'Saving…' : 'Save Credentials'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Live event feed + Logs ────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,2fr)', gap: 20 }}>
 

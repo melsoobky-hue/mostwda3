@@ -32,7 +32,7 @@ export function saveDb() {
   }
 }
 
-function runSql(sql, params = []) {
+export function runSql(sql, params = []) {
   const stmt = db.prepare(sql);
   if (params.length) stmt.bind(params);
   stmt.step();
@@ -926,6 +926,24 @@ function initSchema() {
     );
   `);
 
+  // ── Daily Summary ──────────────────────────────────────────────────────
+  runSql(`
+    CREATE TABLE IF NOT EXISTS daily_summary (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT UNIQUE,
+      total_orders INTEGER DEFAULT 0,
+      total_revenue REAL DEFAULT 0,
+      total_costs REAL DEFAULT 0,
+      total_profit REAL DEFAULT 0,
+      total_cod REAL DEFAULT 0,
+      total_shipping REAL DEFAULT 0,
+      delayed_orders INTEGER DEFAULT 0,
+      delivered_orders INTEGER DEFAULT 0,
+      cancelled_orders INTEGER DEFAULT 0,
+      avg_order_value REAL DEFAULT 0
+    );
+  `);
+
   // Insert default chart of accounts if empty
   const coaCount = execCount('SELECT COUNT(*) FROM chart_of_accounts');
   if (coaCount === 0) {
@@ -982,7 +1000,7 @@ function initSchema() {
 
 // ─── Internal helpers ──────────────────────────────────────────────────────────
 
-function queryAll(sql, params = []) {
+export function queryAll(sql, params = []) {
   try {
     const stmt = db.prepare(sql);
     if (params.length) stmt.bind(params);
@@ -996,7 +1014,7 @@ function queryAll(sql, params = []) {
   }
 }
 
-function queryOne(sql, params = []) {
+export function queryOne(sql, params = []) {
   try {
     const stmt = db.prepare(sql);
     if (params.length) stmt.bind(params);
@@ -1010,7 +1028,7 @@ function queryOne(sql, params = []) {
   }
 }
 
-function execCount(sql, params = []) {
+export function execCount(sql, params = []) {
   try {
     const r = db.exec(sql, params);
     return (r.length > 0 && r[0].values.length > 0) ? r[0].values[0][0] : 0;
@@ -2381,7 +2399,7 @@ export function getProductsERP(filters = {}) {
 export function updateProductERP(id, data) {
   const fields = [];
   const params = [];
-  const allowed = ['name','name_ar','sku','barcode','category','category_ar','subcategory','mirror_type','mirror_shape','mirror_color','price','cost','weight','dimensions','description','description_ar','image_url','images','is_active'];
+  const allowed = ['name','name_ar','sku','barcode','category','category_ar','subcategory','mirror_type','mirror_shape','mirror_color','price','cost','weight','dimensions','description','description_ar','image_url','gallery_images','is_active'];
   for (const [k, v] of Object.entries(data)) {
     if (allowed.includes(k)) { fields.push(`${k} = ?`); params.push(typeof v === 'object' ? JSON.stringify(v) : v); }
   }
@@ -2393,13 +2411,13 @@ export function updateProductERP(id, data) {
 }
 
 export function createProductERP(data) {
-  runSql(`INSERT INTO products (name, name_ar, sku, barcode, source, category, category_ar, subcategory, mirror_type, mirror_shape, mirror_color, price, cost, weight, dimensions, description, description_ar, image_url, images, is_active)
+  runSql(`INSERT INTO products (name, name_ar, sku, barcode, source, category, category_ar, subcategory, mirror_type, mirror_shape, mirror_color, price, cost, weight, dimensions, description, description_ar, image_url, gallery_images, is_active)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [data.name || '', data.name_ar || '', data.sku || '', data.barcode || '', data.source || 'manual',
      data.category || '', data.category_ar || '', data.subcategory || '', data.mirror_type || '',
      data.mirror_shape || '', data.mirror_color || '', data.price || 0, data.cost || 0,
      data.weight || '', data.dimensions || '', data.description || '', data.description_ar || '',
-     data.image_url || '', JSON.stringify(data.images || []), data.is_active !== false ? 1 : 0]);
+     data.image_url || '', JSON.stringify(data.gallery_images || []), data.is_active !== false ? 1 : 0]);
   const row = queryOne('SELECT last_insert_rowid() as id');
   saveDb();
   return row?.id;
@@ -2436,9 +2454,11 @@ export function getInventoryFiltered(filters = {}) {
 
 export function getSalesSummary(filters = {}) {
   let dateWhere = '1=1';
+  let paymentDateWhere = '1=1';
   const params = [];
-  if (filters.dateFrom) { dateWhere += ' AND date >= ?'; params.push(filters.dateFrom); }
-  if (filters.dateTo) { dateWhere += ' AND date <= ?'; params.push(filters.dateTo); }
+  const paymentParams = [];
+  if (filters.dateFrom) { dateWhere += ' AND date >= ?'; params.push(filters.dateFrom); paymentDateWhere += ' AND payment_date >= ?'; paymentParams.push(filters.dateFrom); }
+  if (filters.dateTo) { dateWhere += ' AND date <= ?'; params.push(filters.dateTo); paymentDateWhere += ' AND payment_date <= ?'; paymentParams.push(filters.dateTo); }
 
   const invoiceStats = queryOne(`
     SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total, COALESCE(SUM(amount_paid), 0) as paid, COALESCE(SUM(balance_due), 0) as outstanding
@@ -2452,8 +2472,8 @@ export function getSalesSummary(filters = {}) {
 
   const paymentStats = queryOne(`
     SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total
-    FROM payments WHERE ${dateWhere}
-  `, params);
+    FROM payments WHERE ${paymentDateWhere}
+  `, paymentParams);
 
   const creditStats = queryOne(`
     SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total

@@ -1,23 +1,10 @@
 import { Router } from 'express';
-import { getDb } from '../services/database.js';
+import { queryAll } from '../services/database.js';
 
 const router = Router();
 
-function queryAll(sql, params = []) {
-  const db = getDb();
-  try {
-    const stmt = db.prepare(sql);
-    if (params.length) stmt.bind(params);
-    const results = [];
-    while (stmt.step()) results.push(stmt.getAsObject());
-    stmt.free();
-    return results;
-  } catch (e) { return []; }
-}
-
 router.get('/', (req, res) => {
   try {
-    const db = getDb();
     const alerts = [];
 
     const lowStock = queryAll(

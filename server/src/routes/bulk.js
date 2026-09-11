@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDb, saveDb } from '../services/database.js';
+import { runSql, saveDb } from '../services/database.js';
 
 const router = Router();
 
@@ -10,7 +10,6 @@ router.post('/price', (req, res) => {
       return res.status(400).json({ error: 'No products selected' });
     }
 
-    const db = getDb();
     let updated = 0;
 
     for (const sku of skus) {
@@ -39,7 +38,7 @@ router.post('/price', (req, res) => {
 
       if (fields.length > 0) {
         fields.push("updated_at = datetime('now')");
-        db.run(`UPDATE products SET ${fields.join(', ')} WHERE sku = ?`, [...vals, sku]);
+        runSql(`UPDATE products SET ${fields.join(', ')} WHERE sku = ?`, [...vals, sku]);
         updated++;
       }
     }
