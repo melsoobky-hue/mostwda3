@@ -262,6 +262,69 @@ export default function SyncPage() {
 
   const [syncing, setSyncing] = useState(false);
 
+  // ── Credentials & browser-login state ───────────────────────────────────
+  const [creds, setCreds]               = useState({});
+  const [credEdit, setCredEdit]         = useState(null);   // null | 'chichomz' | 'raneen'
+  const [credForm, setCredForm]         = useState({ email: '', password: '' });
+  const [savingCred, setSavingCred]     = useState(false);
+  const [loginStatus, setLoginStatus]   = useState({});     // { chichomz: {running,success,error,logs,hasCookies} }
+  const loginPollRef                    = useRef({});
+
+  const fetchCreds = async () => {
+    try {
+      const d = await fetch('/api/sync/credentials').then(r => r.json());
+      setCreds(d);
+    } catch (_) {}
+  };
+
+  useEffect(() => { fetchCreds(); }, []);
+
+  const saveCred = async () => {
+    if (!credEdit) return;
+    setSavingCred(true);
+    try {
+      await fetch('/api/sync/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: credEdit, ...credForm }),
+      });
+      await fetchCreds();
+      setCredEdit(null);
+    } finally {
+      setSavingCred(false);
+    }
+  };
+
+  const clearSession = async (source) => {
+    await fetch(`/api/sync/cookies/${source}`, { method: 'DELETE' });
+    await fetchCreds();
+    setLoginStatus(prev => ({ ...prev, [source]: null }));
+  };
+
+  const startBrowserLogin = async (source) => {
+    // Start the login process
+    await fetch(`/api/sync/login/${source}`, { method: 'POST' });
+    setLoginStatus(prev => ({ ...prev, [source]: { running: true, logs: [] } }));
+
+    // Poll status every second
+    if (loginPollRef.current[source]) clearInterval(loginPollRef.current[source]);
+    loginPollRef.current[source] = setInterval(async () => {
+      try {
+        const d = await fetch(`/api/sync/login/${source}/status`).then(r => r.json());
+        setLoginStatus(prev => ({ ...prev, [source]: d }));
+        if (!d.running) {
+          clearInterval(loginPollRef.current[source]);
+          if (d.success) fetchCreds();
+        }
+      } catch (_) {}
+    }, 1000);
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => Object.values(loginPollRef.current).forEach(t => clearInterval(t));
+  }, []);
+
   const syncAll = async () => {
     setSyncing(true);
     try {
@@ -288,12 +351,13 @@ export default function SyncPage() {
   const sources   = status?.sources || {};
 
   const EVENT_META = {
-    start:    { color: 'var(--info)',    icon: '▶' },
-    running:  { color: 'var(--warning)', icon: '⟳' },
-    success:  { color: 'var(--success)', icon: '✓' },
-    failed:   { color: 'var(--danger)',  icon: '✗' },
+    start:    { color: 'var(--info)',       icon: '▶' },
+    running:  { color: 'var(--warning)',    icon: '⟳' },
+    success:  { color: 'var(--success)',    icon: '✓' },
+    failed:   { color: 'var(--danger)',     icon: '✗' },
     skipped:  { color: 'var(--text-muted)', icon: '—' },
-    complete: { color: 'var(--accent)',  icon: '★' },
+    complete: { color: 'var(--accent)',     icon: '★' },
+    log:      { color: 'var(--text-muted)', icon: '·' },
   };
 
   return (
